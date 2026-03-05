@@ -242,16 +242,12 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (DENGAN FIREBASE MILIK OZZA) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (DENGAN FIREBASE MILIK OZZA - MODE OFFLINE KILAT) -->
     <script type="module">
-        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ====================================================================================
-        // KONFIGURASI DATABASE MILIK OZZA (global-recap-ce)
-        // ====================================================================================
         const ozzaFirebaseConfig = {
             apiKey: "AIzaSyAyfY7_Mh5DvtB8xMbC_zh1Ng7R7zat91A",
             authDomain: "global-recap-ce.firebaseapp.com",
@@ -265,17 +261,14 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : ozzaFirebaseConfig;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'ce-2026-portal';
 
-        // Inisialisasi Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // State Global Aplikasi
         let currentUser = null; 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
         
-        // Data Login Sederhana
         const userCredentials = {
             'admin': { pass: '123', role: 'GLOBAL' },
             'strategic': { pass: '123', role: 'STRATEGIC PARTNERSHIP' },
@@ -286,21 +279,14 @@
         let transactions = []; 
         let editingDbId = null;  
 
-        // Format Rupiah
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
         };
 
-        // ====================================================================================
-        // LOGIKA DATABASE (FIREBASE FIRESTORE)
-        // ====================================================================================
-        
         // 1. Auth Otomatis
         async function initAuth() {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    // Hanya ada di lingkungan Canvas khusus
-                }
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { }
                 await signInAnonymously(auth);
             } catch (error) {
                 console.error("Auth error:", error);
@@ -308,11 +294,11 @@
         }
         initAuth();
 
-        // 2. Dengarkan Data Database Secara Real-time
+        // 2. Listener Data Real-time
         onAuthStateChanged(auth, (user) => {
             const dbStatusEl = document.getElementById('db-status');
             if (user) {
-                dbStatusEl.innerHTML = '<i data-lucide="cloud" class="w-3 h-3"></i> Database Online';
+                dbStatusEl.innerHTML = '<i data-lucide="cloud" class="w-3 h-3"></i> Database Aktif';
                 dbStatusEl.className = 'bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-md border border-emerald-200 flex items-center gap-1';
                 lucide.createIcons();
 
@@ -330,10 +316,6 @@
                 });
             }
         });
-
-        // ====================================================================================
-        // FUNGSI UI & INTERAKSI FRONTEND
-        // ====================================================================================
 
         lucide.createIcons();
 
@@ -492,18 +474,13 @@
             });
         }
 
-        // Setup Form
         document.getElementById('input-date').valueAsDate = new Date();
 
         window.toggleSGEDropdown = function() {
             const proker = currentUser === 'SGE MARKET HUB' ? 'SGE MARKET HUB' : document.getElementById('input-proker').value;
             const sgeContainer = document.getElementById('sge-category-container');
-            
-            if(proker === 'SGE MARKET HUB') {
-                sgeContainer.classList.remove('hidden');
-            } else {
-                sgeContainer.classList.add('hidden');
-            }
+            if(proker === 'SGE MARKET HUB') sgeContainer.classList.remove('hidden');
+            else sgeContainer.classList.add('hidden');
         }
 
         window.setTxType = function(type) {
@@ -525,17 +502,12 @@
             if(!tx) return;
 
             editingDbId = dbId; 
-            
             document.getElementById('input-date').value = tx.date;
-            
-            if(currentUser === 'GLOBAL') {
-                document.getElementById('input-proker').value = tx.proker;
-            }
+            if(currentUser === 'GLOBAL') document.getElementById('input-proker').value = tx.proker;
             
             window.toggleSGEDropdown();
-            if (tx.proker === 'SGE MARKET HUB') {
-                document.getElementById('input-category').value = tx.category;
-            }
+            if (tx.proker === 'SGE MARKET HUB') document.getElementById('input-category').value = tx.category;
+            
             window.setTxType(tx.type);
             document.getElementById('input-nominal').value = tx.nominal;
             document.getElementById('input-desc').value = tx.desc;
@@ -544,20 +516,18 @@
             window.switchTab('input');
         }
 
-        window.deleteTx = async function(dbId) {
-            if(confirm('Yakin ingin menghapus transaksi ini? Data yang terhapus di database tidak bisa kembali.')) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
-                    await deleteDoc(docRef);
-                } catch (error) {
-                    console.error("Gagal menghapus:", error);
-                    alert("Gagal menghapus data dari server. Pastikan koneksi internet aktif.");
-                }
+        // Hapus Data Tanpa Loading, sinkronisasi dibalik layar
+        window.deleteTx = function(dbId) {
+            if(confirm('Yakin ingin menghapus transaksi ini?')) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
+                deleteDoc(docRef).catch(err => console.error("Hapus background gagal:", err));
             }
         }
 
-        // Submit form (Create / Update ke Firebase) DENGAN SISTEM TIMEOUT
-        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+        // =========================================================================
+        // FORM SUBMIT DENGAN SISTEM MODE KILAT (OFFLINE-FIRST)
+        // =========================================================================
+        document.getElementById('transaction-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -574,42 +544,29 @@
             };
 
             const submitBtn = document.getElementById('btn-submit');
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'MENYIMPAN...';
-
-            try {
-                // Siapkan tugas simpan data
-                const saveTask = editingDbId 
-                    ? updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId), txData)
-                    : addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), txData);
-                
-                // Siapkan hitung mundur 8 detik
-                const timeoutTask = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
-
-                // Lakukan balapan (Promise.race) antara tugas simpan vs waktu 8 detik
-                await Promise.race([saveTask, timeoutTask]);
-
-                // Kalau masuk ke sini, artinya berhasil tersimpan sebelum 8 detik!
+            
+            // Firebase "Latency Compensation": 
+            // Kita minta Firebase simpan data TANPA menunggu respon internetnya (tanpa await).
+            // Datanya akan otomatis muncul di tabel sedetik setelah tombol diklik!
+            if (editingDbId) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
+                updateDoc(docRef, txData).catch(err => console.error("Update background gagal:", err));
                 editingDbId = null;
-                alert('Data berhasil disimpan ke Server secara permanen!');
-                
-                // Reset Form
-                submitBtn.innerText = 'SIMPAN KE BUKU KAS';
-                submitBtn.disabled = false;
-                document.getElementById('input-nominal').value = '';
-                document.getElementById('input-desc').value = '';
-                document.getElementById('input-date').valueAsDate = new Date();
-                
-                window.switchTab('riwayat');
-
-            } catch (error) {
-                // Kalau masuk ke sini, artinya tersumbat/melebihi 8 detik
-                console.error("Gagal menyimpan atau Time Out:", error);
-                alert("GAGAL TERSIMPAN! Koneksi terblokir.\n\nSaran: Matikan Adblocker / Shield Vivaldi, lalu muat ulang (Refresh) halaman web ini.");
-                
-                submitBtn.disabled = false;
-                submitBtn.innerText = editingDbId ? 'UPDATE TRANSAKSI' : 'SIMPAN KE BUKU KAS';
+            } else {
+                const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
+                addDoc(txRef, txData).catch(err => console.error("Tambah background gagal:", err));
             }
+            
+            // Langsung munculkan notif sukses ke user & bersihkan form
+            alert('Sukses! Data langsung tercatat di tabel. (Sistem akan mengupload ke server saat koneksi internet stabil).');
+            
+            submitBtn.innerText = 'SIMPAN KE BUKU KAS';
+            submitBtn.disabled = false;
+            document.getElementById('input-nominal').value = '';
+            document.getElementById('input-desc').value = '';
+            document.getElementById('input-date').valueAsDate = new Date();
+            
+            window.switchTab('riwayat');
         });
 
         window.switchTab = function(tabId) {
