@@ -26,6 +26,16 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Format Khusus Saat Dicetak (Print to PDF) */
+        @media print {
+            body { background-color: white !important; }
+            header, nav, button, .no-print { display: none !important; }
+            #app-screen, #view-laporan { display: block !important; }
+            .view-section:not(#view-laporan) { display: none !important; }
+            .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
+            .border { border-color: #e2e8f0 !important; }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-800">
@@ -105,6 +115,9 @@
                 </button>
                 <button onclick="switchTab('riwayat')" id="tab-riwayat" class="nav-tab flex items-center gap-2 py-4 px-6 font-semibold border-b-4 transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-orange-500">
                     <i data-lucide="list-ordered" class="w-5 h-5"></i> Buku Kas (Riwayat)
+                </button>
+                <button onclick="switchTab('laporan')" id="tab-laporan" class="nav-tab flex items-center gap-2 py-4 px-6 font-semibold border-b-4 transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-orange-500 hidden">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> Laporan AF
                 </button>
             </div>
         </nav>
@@ -217,7 +230,7 @@
                                     <th class="p-4 font-bold uppercase tracking-wider">Proker & Keterangan</th>
                                     <th class="p-4 font-bold uppercase tracking-wider text-right">Debit (Masuk)</th>
                                     <th class="p-4 font-bold uppercase tracking-wider text-right">Kredit (Keluar)</th>
-                                    <th class="p-4 font-bold uppercase tracking-wider text-center">Aksi</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-center no-print">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="history-table-body" class="divide-y divide-slate-100">
@@ -228,10 +241,61 @@
                 </div>
             </div>
 
+            <!-- VIEW: LAPORAN AF (BARU) -->
+            <div id="view-laporan" class="view-section fade-in space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between md:items-end border-b border-slate-200 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800">Laporan Bagi Hasil AF</h2>
+                        <p class="text-slate-500">Rekapitulasi pendapatan bersih dan pembagian dengan Administration Finance.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex items-center">
+                            <span class="pl-3 pr-2 text-sm font-bold text-slate-500">Bulan:</span>
+                            <input type="month" id="report-month" onchange="renderLaporanAF()" class="p-2 bg-transparent text-orange-600 font-bold outline-none cursor-pointer">
+                        </div>
+                        <button onclick="window.print()" class="no-print bg-slate-800 text-white py-2 px-4 rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 shadow-md">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Cetak
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kartu Rangkuman Bagi Hasil -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="af-summary-cards">
+                    <!-- Di-generate otomatis oleh JS -->
+                </div>
+
+                <!-- Tabel Detail AF -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+                    <div class="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800">Rincian Transaksi Bulanan</h3>
+                        <span id="af-table-month-label" class="text-sm font-semibold text-slate-500"></span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 text-xs border-b border-slate-200">
+                                    <th class="p-4 font-bold uppercase tracking-wider">Tanggal</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider">Unit Proker</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider">Keterangan</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-right">Masuk</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-right">Keluar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="af-table-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Baris tabel di-generate otomatis oleh JS -->
+                            </tbody>
+                            <tfoot id="af-table-foot" class="bg-slate-50 font-bold border-t-2 border-slate-200">
+                                <!-- Footer total di-generate otomatis oleh JS -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (DENGAN FIREBASE MILIK OZZA - MODE OFFLINE KILAT) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -283,6 +347,11 @@
         }
         initAuth();
 
+        // Set Default Bulan Laporan ke Bulan Ini
+        const today = new Date();
+        const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('report-month').value = currentMonthString;
+
         // 2. Listener Data Real-time
         onAuthStateChanged(auth, (user) => {
             const dbStatusEl = document.getElementById('db-status');
@@ -332,11 +401,13 @@
             
             if(role === 'GLOBAL') {
                 document.getElementById('tab-dashboard').classList.remove('hidden');
+                document.getElementById('tab-laporan').classList.remove('hidden'); // Munculkan Tab Laporan AF
                 document.getElementById('proker-selector-container').classList.remove('hidden');
                 document.getElementById('header-netto-label').innerText = 'Total Kas Netto';
                 window.switchTab('dashboard');
             } else {
                 document.getElementById('tab-dashboard').classList.add('hidden');
+                document.getElementById('tab-laporan').classList.add('hidden'); // Sembunyikan Tab Laporan AF
                 document.getElementById('proker-selector-container').classList.add('hidden');
                 document.getElementById('input-proker').value = role;
                 document.getElementById('header-netto-label').innerText = 'Kas ' + role;
@@ -357,7 +428,10 @@
 
         function updateUI() {
             if(!currentUser) return;
-            if(currentUser === 'GLOBAL') renderDashboard();
+            if(currentUser === 'GLOBAL') {
+                renderDashboard();
+                renderLaporanAF(); // Update Laporan AF khusus Global
+            }
             renderRiwayat();
             updateHeaderNetto();
             lucide.createIcons();
@@ -410,6 +484,145 @@
             document.getElementById('global-out').innerText = formatRp(totalOut);
         }
 
+        // =========================================================================
+        // FITUR BARU: RENDER LAPORAN AF (BAGI HASIL)
+        // =========================================================================
+        window.renderLaporanAF = function() {
+            const monthVal = document.getElementById('report-month').value; // Format "YYYY-MM"
+            if(!monthVal) return;
+
+            // Ambil nama bulan untuk label
+            const [year, month] = monthVal.split('-');
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
+            document.getElementById('af-table-month-label').innerText = `Periode: ${prettyMonth}`;
+
+            // Filter transaksi hanya untuk bulan yang dipilih
+            const filteredTx = transactions.filter(t => t.date.startsWith(monthVal));
+
+            // --- KALKULASI SGE MARKET HUB (50:50) ---
+            const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
+            const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const sgeNet = sgeIn - sgeOut;
+            // Jika minus, AF tidak ikut menanggung rugi (0), CE menanggung minusnya.
+            const sgeAfShare = sgeNet > 0 ? sgeNet * 0.5 : 0;
+            const sgeCeShare = sgeNet > 0 ? sgeNet * 0.5 : sgeNet; 
+
+            // --- KALKULASI STRATEGIC PARTNERSHIP (70 CE : 30 AF) ---
+            const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
+            const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const stratNet = stratIn - stratOut;
+            // Jika minus, AF 0, CE minus.
+            const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
+            const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
+
+            // --- RENDER KARTU SUMMARY ---
+            const summaryContainer = document.getElementById('af-summary-cards');
+            summaryContainer.innerHTML = `
+                <!-- Kartu SGE -->
+                <div class="bg-orange-50 rounded-2xl p-6 border border-orange-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-black text-orange-800 text-lg">SGE MARKET HUB</h3>
+                        <span class="bg-orange-200 text-orange-800 text-xs font-bold px-2 py-1 rounded">Rasio 50:50</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-orange-700 mb-1">
+                        <span>Pemasukan Kotor</span> <span>${formatRp(sgeIn)}</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-orange-700 mb-3 border-b border-orange-200 pb-2">
+                        <span>Pengeluaran (Modal)</span> <span class="text-rose-600">-${formatRp(sgeOut)}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-orange-900 mb-4">
+                        <span>LABA BERSIH</span> <span>${formatRp(sgeNet)}</span>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-orange-100 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold text-slate-500">Porsi CE (50%)</span>
+                            <span class="font-bold text-emerald-600">${formatRp(sgeCeShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-bold text-slate-800">Setor ke AF (50%)</span>
+                            <span class="font-black text-orange-600 text-lg">${formatRp(sgeAfShare)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kartu STRATEGIC -->
+                <div class="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-black text-blue-800 text-lg">STRATEGIC P.</h3>
+                        <span class="bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded">Rasio 70:30</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-blue-700 mb-1">
+                        <span>Pemasukan Kotor</span> <span>${formatRp(stratIn)}</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-blue-700 mb-3 border-b border-blue-200 pb-2">
+                        <span>Pengeluaran (Operasional)</span> <span class="text-rose-600">-${formatRp(stratOut)}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-blue-900 mb-4">
+                        <span>LABA BERSIH</span> <span>${formatRp(stratNet)}</span>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 border border-blue-100 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold text-slate-500">Porsi CE (70%)</span>
+                            <span class="font-bold text-emerald-600">${formatRp(stratCeShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-bold text-slate-800">Setor ke AF (30%)</span>
+                            <span class="font-black text-blue-600 text-lg">${formatRp(stratAfShare)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // --- RENDER TABEL DETAIL AF ---
+            const tbody = document.getElementById('af-table-body');
+            const tfoot = document.getElementById('af-table-foot');
+            tbody.innerHTML = '';
+
+            let totalIn = 0;
+            let totalOut = 0;
+
+            // Sort data lama ke baru untuk laporan
+            const sortedMonthTx = [...filteredTx].sort((a,b) => a.date.localeCompare(b.date));
+
+            if (sortedMonthTx.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Tidak ada transaksi di bulan ${prettyMonth}.</td></tr>`;
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            sortedMonthTx.forEach(t => {
+                const isMasuk = t.type === 'pemasukan';
+                if(isMasuk) totalIn += t.nominal;
+                else totalOut += t.nominal;
+
+                const badgeColor = t.proker === 'SGE MARKET HUB' ? 'bg-orange-100 text-orange-700' : 
+                                   t.proker === 'STRATEGIC PARTNERSHIP' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4">${t.date}</td>
+                        <td class="p-4"><span class="${badgeColor} px-2 py-1 rounded text-xs font-bold">${t.proker}</span></td>
+                        <td class="p-4">${t.category !== 'UMUM' ? `[${t.category}] ` : ''}${t.desc}</td>
+                        <td class="p-4 text-right font-medium text-emerald-600">${isMasuk ? formatRp(t.nominal) : '-'}</td>
+                        <td class="p-4 text-right font-medium text-rose-600">${!isMasuk ? formatRp(t.nominal) : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="3" class="p-4 text-right">TOTAL KESELURUHAN BULAN INI:</td>
+                    <td class="p-4 text-right text-emerald-700">${formatRp(totalIn)}</td>
+                    <td class="p-4 text-right text-rose-700">${formatRp(totalOut)}</td>
+                </tr>
+            `;
+
+            lucide.createIcons();
+        }
+
         function renderRiwayat() {
             const tbody = document.getElementById('history-table-body');
             tbody.innerHTML = '';
@@ -448,7 +661,7 @@
                         <td class="p-4 text-right font-bold text-rose-600">
                             ${!isPemasukan ? formatRp(t.nominal) : '-'}
                         </td>
-                        <td class="p-4 text-center">
+                        <td class="p-4 text-center no-print">
                             <div class="flex justify-center gap-2">
                                 <button onclick="editTx('${t.dbId}')" class="p-2 text-blue-500 hover:bg-blue-100 rounded-lg transition-colors" title="Edit Transaksi">
                                     <i data-lucide="edit" class="w-4 h-4"></i>
@@ -534,9 +747,7 @@
 
             const submitBtn = document.getElementById('btn-submit');
             
-            // Firebase "Latency Compensation": 
-            // Kita minta Firebase simpan data TANPA menunggu respon internetnya (tanpa await).
-            // Datanya akan otomatis muncul di tabel sedetik setelah tombol diklik!
+            // Firebase "Latency Compensation"
             if (editingDbId) {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
                 updateDoc(docRef, txData).catch(err => console.error("Update background gagal:", err));
@@ -546,7 +757,6 @@
                 addDoc(txRef, txData).catch(err => console.error("Tambah background gagal:", err));
             }
             
-            // Langsung munculkan notif sukses ke user & bersihkan form
             alert('Sukses! Data langsung tercatat di tabel. (Sistem akan mengupload ke server saat koneksi internet stabil).');
             
             submitBtn.innerText = 'SIMPAN KE BUKU KAS';
@@ -577,6 +787,9 @@
             const activeTab = document.getElementById('tab-' + tabId);
             activeTab.classList.remove('border-transparent', 'text-slate-500');
             activeTab.classList.add('border-orange-500', 'text-orange-600');
+
+            // Panggil render khusus jika buka tab laporan
+            if(tabId === 'laporan') renderLaporanAF();
         }
 
     </script>
