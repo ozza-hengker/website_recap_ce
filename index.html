@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Keuangan CE 2026</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Sembunyikan scrollbar tapi tetap bisa scroll */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Animasi Transisi */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-800">
+
+    <!-- ================= LOGIN SCREEN ================= -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center border border-slate-100">
+            <div class="mb-8">
+                <div class="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="lock-keyhole" class="text-orange-500 w-10 h-10"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800">Portal Keuangan CE</h2>
+                <p class="text-slate-500 text-sm mt-2">Silakan masuk menggunakan akun Penanggung Jawab</p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Username</label>
+                    <input type="text" id="login-username" required placeholder="Masukkan username..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                </div>
+                
+                <div id="login-error" class="hidden text-rose-500 text-sm font-bold text-center bg-rose-50 p-2 rounded-lg border border-rose-100">
+                    Username atau password salah!
+                </div>
+
+                <button type="submit" class="w-full py-4 mt-2 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-2 shadow-md">
+                    <i data-lucide="log-in" class="w-5 h-5"></i> MASUK
+                </button>
+            </form>
+
+            <!-- Info Kredensial (Untuk Testing Saja) -->
+            <div class="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-200 text-left">
+                <p class="text-xs font-bold text-orange-800 mb-2">🔐 DAFTAR AKUN (TESTING):</p>
+                <div class="text-xs text-orange-700 grid grid-cols-2 gap-2">
+                    <div><b>Vice Chief:</b><br/>User: <code>admin</code><br/>Pass: <code>123</code></div>
+                    <div><b>PJ SGE:</b><br/>User: <code>sge</code><br/>Pass: <code>123</code></div>
+                    <div><b>PJ Strategic:</b><br/>User: <code>strategic</code><br/>Pass: <code>123</code></div>
+                    <div><b>PJ Merch:</b><br/>User: <code>merch</code><br/>Pass: <code>123</code></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP SCREEN ================= -->
+    <div id="app-screen" class="hidden">
+        <!-- HEADER -->
+        <header class="bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg sticky top-0 z-10">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight flex items-center gap-2">
+                        <i data-lucide="wallet" class="w-6 h-6"></i>
+                        PORTAL KEUANGAN
+                    </h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="user-badge" class="bg-white/20 text-xs font-bold px-2 py-1 rounded-md border border-white/30 flex items-center gap-1">
+                            <i data-lucide="user" class="w-3 h-3"></i> <span id="user-role-text">Global</span>
+                        </span>
+                        <!-- Status Database -->
+                        <span id="db-status" class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded-md border border-amber-200 flex items-center gap-1">
+                            <i data-lucide="cloud-off" class="w-3 h-3"></i> Menghubungkan...
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                    <div class="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/30 text-right">
+                        <p id="header-netto-label" class="text-xs text-orange-100 uppercase font-bold tracking-wider">Total Kas Netto</p>
+                        <p id="global-netto" class="text-xl font-bold">Rp 0</p>
+                    </div>
+                    <button onclick="logout()" class="p-2 bg-rose-500 hover:bg-rose-600 rounded-xl transition-colors shadow-sm" title="Keluar">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION -->
+        <nav class="bg-white shadow-sm border-b border-slate-200">
+            <div class="max-w-6xl mx-auto px-4 flex overflow-x-auto hide-scrollbar">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab flex items-center gap-2 py-4 px-6 font-semibold border-b-4 transition-colors whitespace-nowrap border-orange-500 text-orange-600">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i> Dashboard Global
+                </button>
+                <button onclick="switchTab('input')" id="tab-input" class="nav-tab flex items-center gap-2 py-4 px-6 font-semibold border-b-4 transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-orange-500">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Input Transaksi
+                </button>
+                <button onclick="switchTab('riwayat')" id="tab-riwayat" class="nav-tab flex items-center gap-2 py-4 px-6 font-semibold border-b-4 transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-orange-500">
+                    <i data-lucide="list-ordered" class="w-5 h-5"></i> Buku Kas (Riwayat)
+                </button>
+            </div>
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4 py-8">
+            
+            <!-- VIEW: DASHBOARD GLOBAL -->
+            <div id="view-dashboard" class="view-section fade-in space-y-6 block">
+                <h2 class="text-xl font-bold border-b pb-2">Status Keuangan Per Proker</h2>
+                <div id="proker-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Cards will be generated by JS -->
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <div class="bg-emerald-500 text-white rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-emerald-100 text-sm font-medium">Total Uang Masuk BEM</p>
+                            <p id="global-in" class="text-3xl font-black mt-1">Rp 0</p>
+                        </div>
+                        <i data-lucide="trending-up" class="w-12 h-12 opacity-50"></i>
+                    </div>
+                    <div class="bg-rose-500 text-white rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-rose-100 text-sm font-medium">Total Uang Keluar BEM</p>
+                            <p id="global-out" class="text-3xl font-black mt-1">Rp 0</p>
+                        </div>
+                        <i data-lucide="trending-down" class="w-12 h-12 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: INPUT TRANSAKSI -->
+            <div id="view-input" class="view-section fade-in max-w-2xl mx-auto hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 p-6 border-b border-slate-200">
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="text-orange-500"></i>
+                            Form Rekapitulasi Baru
+                        </h2>
+                        <p class="text-sm text-slate-500 mt-1">Masukkan data pemasukan atau pengeluaran di sini.</p>
+                    </div>
+                    
+                    <form id="transaction-form" class="p-6 space-y-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Tanggal Transaksi</label>
+                                <input type="date" id="input-date" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+                            </div>
+                            <div id="proker-selector-container">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Program Kerja (Proker)</label>
+                                <select id="input-proker" onchange="toggleSGEDropdown()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none font-semibold text-orange-700">
+                                    <option value="STRATEGIC PARTNERSHIP">STRATEGIC PARTNERSHIP</option>
+                                    <option value="FILKOMMERCH">FILKOMMERCH</option>
+                                    <option value="SGE MARKET HUB">SGE MARKET HUB</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dropdown Khusus SGE Market Hub -->
+                        <div id="sge-category-container" class="bg-orange-50 p-4 rounded-xl border border-orange-100 hidden">
+                            <label class="block text-sm font-bold text-orange-800 mb-2">Pilih Jenis Usaha SGE</label>
+                            <select id="input-category" class="w-full p-3 bg-white border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-orange-700">
+                                <option value="ICE CREAM">ICE CREAM</option>
+                                <option value="MINUMAN">MINUMAN</option>
+                                <option value="POP MIE">POP MIE</option>
+                                <option value="PDH KKN">PDH KKN</option>
+                                <option value="LAINNYA">LAINNYA</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Jenis Transaksi</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button type="button" id="btn-pemasukan" onclick="setTxType('pemasukan')" class="tx-type-btn p-3 rounded-xl border-2 font-bold transition-all border-emerald-500 bg-emerald-50 text-emerald-700">
+                                    + Pemasukan
+                                </button>
+                                <button type="button" id="btn-pengeluaran" onclick="setTxType('pengeluaran')" class="tx-type-btn p-3 rounded-xl border-2 font-bold transition-all border-slate-200 bg-white text-slate-500 hover:border-rose-200">
+                                    - Pengeluaran
+                                </button>
+                            </div>
+                            <input type="hidden" id="input-type" value="pemasukan">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Nominal (Rp)</label>
+                            <input type="number" id="input-nominal" placeholder="Contoh: 1500000" required class="w-full p-3 text-lg font-bold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Keterangan / Rincian</label>
+                            <input type="text" id="input-desc" placeholder="Contoh: Pembelian Lakban dan Trashbag" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none"/>
+                        </div>
+
+                        <button type="submit" id="btn-submit" class="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98]">
+                            SIMPAN KE BUKU KAS
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW: BUKU KAS (RIWAYAT) -->
+            <div id="view-riwayat" class="view-section fade-in space-y-6 hidden">
+                <h2 id="riwayat-title" class="text-xl font-bold mb-4">Riwayat Transaksi Keseluruhan</h2>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
+                                    <th class="p-4 font-bold uppercase tracking-wider">Tanggal</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider">Proker & Keterangan</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-right">Debit (Masuk)</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-right">Kredit (Keluar)</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-100">
+                                <!-- History rows will be generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- SCRIPT JAVASCRIPT UTAMA (DENGAN FIREBASE) -->
+    <script type="module">
+        // Import Firebase dari CDN Resmi
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ====================================================================================
+        // KONFIGURASI DATABASE FIREBASE UNTUK GITHUB PAGES (DIBACA YA OZZA!)
+        // ====================================================================================
+        // Saat kamu hosting ini di GitHub Pages nanti, kamu harus membuat akun Firebase gratis di console.firebase.google.com
+        // Lalu, paste config project kamu ke variabel 'defaultConfig' di bawah ini:
+        const defaultConfig = {
+            apiKey: "API_KEY_DARI_FIREBASE",
+            authDomain: "PROJECT_KAMU.firebaseapp.com",
+            projectId: "PROJECT_KAMU",
+            storageBucket: "PROJECT_KAMU.appspot.com",
+            messagingSenderId: "MESSAGING_SENDER_ID",
+            appId: "APP_ID_KAMU"
+        };
+
+        // Ini logika agar saat di Canvas dia pakai database Canvas, saat di Github pakai database Ozza
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ce-2026-portal';
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // State Global Aplikasi
+        let currentUser = null; 
+        const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
+        const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
+        
+        // Data Login Sederhana
+        const userCredentials = {
+            'admin': { pass: '123', role: 'GLOBAL' },
+            'strategic': { pass: '123', role: 'STRATEGIC PARTNERSHIP' },
+            'merch': { pass: '123', role: 'FILKOMMERCH' },
+            'sge': { pass: '123', role: 'SGE MARKET HUB' }
+        };
+
+        let transactions = []; 
+        let editingDbId = null;  
+
+        // Format Rupiah
+        const formatRp = (angka) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        };
+
+        // ====================================================================================
+        // LOGIKA DATABASE (FIREBASE FIRESTORE)
+        // ====================================================================================
+        
+        // 1. Auth Otomatis (Database perlu verifikasi pengguna anonim)
+        async function initAuth() {
+            try {
+                // Di Canvas kita pakai token kustom jika ada, kalau tidak login anonim
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    // Hanya ada di lingkungan Canvas khusus
+                    // Abaikan di GitHub Pages
+                }
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth error:", error);
+            }
+        }
+        initAuth();
+
+        // 2. Dengarkan Data Database Secara Real-time
+        onAuthStateChanged(auth, (user) => {
+            const dbStatusEl = document.getElementById('db-status');
+            if (user) {
+                dbStatusEl.innerHTML = '<i data-lucide="cloud" class="w-3 h-3"></i> Database Online';
+                dbStatusEl.className = 'bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-md border border-emerald-200 flex items-center gap-1';
+                lucide.createIcons();
+
+                const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
+                
+                onSnapshot(txRef, (snapshot) => {
+                    transactions = [];
+                    snapshot.forEach(doc => {
+                        transactions.push({ dbId: doc.id, ...doc.data() });
+                    });
+                    
+                    // Setelah data terbaru ditarik, perbarui tampilan Web
+                    if (currentUser) updateUI();
+                }, (error) => {
+                    console.error("Error fetching data:", error);
+                    alert("Gagal memuat database!");
+                });
+            }
+        });
+
+        // ====================================================================================
+        // FUNGSI UI & INTERAKSI FRONTEND
+        // Karena kita pakai module script (import), kita harus menempelkan fungsi ke window
+        // agar tombol di HTML (onclick) bisa memanggilnya.
+        // ====================================================================================
+
+        lucide.createIcons();
+
+        window.handleLogin = function(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('login-username').value.trim();
+            const passInput = document.getElementById('login-password').value;
+            const errorElement = document.getElementById('login-error');
+
+            if (userCredentials[userInput] && userCredentials[userInput].pass === passInput) {
+                errorElement.classList.add('hidden');
+                login(userCredentials[userInput].role);
+                document.getElementById('login-username').value = '';
+                document.getElementById('login-password').value = '';
+            } else {
+                errorElement.classList.remove('hidden');
+            }
+        }
+
+        function login(role) {
+            currentUser = role;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('user-role-text').innerText = role === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + role;
+            
+            if(role === 'GLOBAL') {
+                document.getElementById('tab-dashboard').classList.remove('hidden');
+                document.getElementById('proker-selector-container').classList.remove('hidden');
+                document.getElementById('header-netto-label').innerText = 'Total Kas Netto';
+                window.switchTab('dashboard');
+            } else {
+                document.getElementById('tab-dashboard').classList.add('hidden');
+                document.getElementById('proker-selector-container').classList.add('hidden');
+                document.getElementById('input-proker').value = role;
+                document.getElementById('header-netto-label').innerText = 'Kas ' + role;
+                window.switchTab('input');
+            }
+
+            window.toggleSGEDropdown();
+            updateUI();
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        window.logout = function() {
+            currentUser = null;
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function updateUI() {
+            if(!currentUser) return;
+            if(currentUser === 'GLOBAL') renderDashboard();
+            renderRiwayat();
+            updateHeaderNetto();
+            lucide.createIcons();
+        }
+
+        function updateHeaderNetto() {
+            const txsToCount = currentUser === 'GLOBAL' ? transactions : transactions.filter(t => t.proker === currentUser);
+            const inTotal = txsToCount.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const outTotal = txsToCount.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            document.getElementById('global-netto').innerText = formatRp(inTotal - outTotal);
+        }
+
+        function renderDashboard() {
+            let totalIn = 0, totalOut = 0;
+            const cardsContainer = document.getElementById('proker-cards');
+            cardsContainer.innerHTML = ''; 
+
+            prokers.forEach(proker => {
+                const txProker = transactions.filter(t => t.proker === proker);
+                const inTotal = txProker.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+                const outTotal = txProker.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+                const balance = inTotal - outTotal;
+                const isDefisit = balance < 0;
+
+                totalIn += inTotal;
+                totalOut += outTotal;
+
+                cardsContainer.innerHTML += `
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <h3 class="text-sm font-bold text-slate-500 mb-3">${proker}</h3>
+                        <div class="space-y-2 mb-4">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-500">Masuk:</span>
+                                <span class="font-semibold text-emerald-600">${formatRp(inTotal)}</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-500">Keluar:</span>
+                                <span class="font-semibold text-rose-600">${formatRp(outTotal)}</span>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl flex items-center justify-between ${isDefisit ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}">
+                            <span class="text-xs font-bold uppercase">Saldo Akhir</span>
+                            <span class="font-bold">${formatRp(balance)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('global-in').innerText = formatRp(totalIn);
+            document.getElementById('global-out').innerText = formatRp(totalOut);
+        }
+
+        function renderRiwayat() {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+
+            const visibleTransactions = currentUser === 'GLOBAL' 
+                ? transactions 
+                : transactions.filter(t => t.proker === currentUser);
+
+            document.getElementById('riwayat-title').innerText = currentUser === 'GLOBAL' 
+                ? 'Riwayat Transaksi Keseluruhan' 
+                : 'Riwayat Transaksi ' + currentUser;
+
+            if (visibleTransactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data transaksi yang dicatat.</td></tr>`;
+                return;
+            }
+
+            // Urutkan berdasarkan waktu data dibuat (terbaru di atas)
+            const sortedTx = [...visibleTransactions].sort((a,b) => b.createdAt - a.createdAt);
+
+            sortedTx.forEach(t => {
+                const isPemasukan = t.type === 'pemasukan';
+                const tagCategory = t.category !== 'UMUM' ? `<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded mr-2">${t.category}</span>` : '';
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 text-sm text-slate-500">${t.date}</td>
+                        <td class="p-4">
+                            <div class="font-bold text-slate-800 text-sm">${t.proker}</div>
+                            <div class="text-xs text-slate-500 mt-1">
+                                ${tagCategory} ${t.desc}
+                            </div>
+                        </td>
+                        <td class="p-4 text-right font-bold text-emerald-600">
+                            ${isPemasukan ? formatRp(t.nominal) : '-'}
+                        </td>
+                        <td class="p-4 text-right font-bold text-rose-600">
+                            ${!isPemasukan ? formatRp(t.nominal) : '-'}
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="editTx('${t.dbId}')" class="p-2 text-blue-500 hover:bg-blue-100 rounded-lg transition-colors" title="Edit Transaksi">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteTx('${t.dbId}')" class="p-2 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus Transaksi">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Setup Form
+        document.getElementById('input-date').valueAsDate = new Date();
+
+        window.toggleSGEDropdown = function() {
+            const proker = currentUser === 'SGE MARKET HUB' ? 'SGE MARKET HUB' : document.getElementById('input-proker').value;
+            const sgeContainer = document.getElementById('sge-category-container');
+            
+            if(proker === 'SGE MARKET HUB') {
+                sgeContainer.classList.remove('hidden');
+            } else {
+                sgeContainer.classList.add('hidden');
+            }
+        }
+
+        window.setTxType = function(type) {
+            document.getElementById('input-type').value = type;
+            const btnIn = document.getElementById('btn-pemasukan');
+            const btnOut = document.getElementById('btn-pengeluaran');
+
+            if (type === 'pemasukan') {
+                btnIn.className = "tx-type-btn p-3 rounded-xl border-2 font-bold transition-all border-emerald-500 bg-emerald-50 text-emerald-700";
+                btnOut.className = "tx-type-btn p-3 rounded-xl border-2 font-bold transition-all border-slate-200 bg-white text-slate-500 hover:border-rose-200";
+            } else {
+                btnOut.className = "tx-type-btn p-3 rounded-xl border-2 font-bold transition-all border-rose-500 bg-rose-50 text-rose-700";
+                btnIn.className = "tx-type-btn p-3 rounded-xl border-2 font-bold transition-all border-slate-200 bg-white text-slate-500 hover:border-emerald-200";
+            }
+        }
+
+        window.editTx = function(dbId) {
+            const tx = transactions.find(t => t.dbId === dbId);
+            if(!tx) return;
+
+            editingDbId = dbId; 
+            
+            document.getElementById('input-date').value = tx.date;
+            
+            if(currentUser === 'GLOBAL') {
+                document.getElementById('input-proker').value = tx.proker;
+            }
+            
+            window.toggleSGEDropdown();
+            if (tx.proker === 'SGE MARKET HUB') {
+                document.getElementById('input-category').value = tx.category;
+            }
+            window.setTxType(tx.type);
+            document.getElementById('input-nominal').value = tx.nominal;
+            document.getElementById('input-desc').value = tx.desc;
+
+            document.getElementById('btn-submit').innerText = 'UPDATE TRANSAKSI';
+            window.switchTab('input');
+        }
+
+        window.deleteTx = async function(dbId) {
+            if(confirm('Yakin ingin menghapus transaksi ini? Data yang terhapus di database tidak bisa kembali.')) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
+                    await deleteDoc(docRef);
+                    // UI akan terupdate otomatis via onSnapshot listener
+                } catch (error) {
+                    console.error("Gagal menghapus:", error);
+                    alert("Gagal menghapus data dari server.");
+                }
+            }
+        }
+
+        // Submit form (Create / Update ke Firebase)
+        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
+            const categoryVal = prokerVal === 'SGE MARKET HUB' ? document.getElementById('input-category').value : 'UMUM';
+
+            const txData = {
+                date: document.getElementById('input-date').value,
+                proker: prokerVal,
+                category: categoryVal,
+                type: document.getElementById('input-type').value,
+                nominal: parseInt(document.getElementById('input-nominal').value),
+                desc: document.getElementById('input-desc').value,
+                createdAt: Date.now() // Digunakan untuk mengurutkan (sort) transaksi terbaru
+            };
+
+            const submitBtn = document.getElementById('btn-submit');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'MENYIMPAN...';
+
+            try {
+                if (editingDbId) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
+                    await updateDoc(docRef, txData);
+                    editingDbId = null;
+                    alert('Data berhasil diperbarui di Database!');
+                } else {
+                    const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
+                    await addDoc(txRef, txData);
+                    alert('Data berhasil disimpan ke Database!');
+                }
+                
+                // Reset Form
+                submitBtn.innerText = 'SIMPAN KE BUKU KAS';
+                submitBtn.disabled = false;
+                document.getElementById('input-nominal').value = '';
+                document.getElementById('input-desc').value = '';
+                document.getElementById('input-date').valueAsDate = new Date();
+                
+                window.switchTab('riwayat');
+                // UI terupdate otomatis oleh listener Firebase
+
+            } catch (error) {
+                console.error("Gagal menyimpan:", error);
+                alert("Gagal menghubungi server database!");
+                submitBtn.disabled = false;
+                submitBtn.innerText = editingDbId ? 'UPDATE TRANSAKSI' : 'SIMPAN KE BUKU KAS';
+            }
+        });
+
+        window.switchTab = function(tabId) {
+            if (tabId !== 'input' && editingDbId) {
+                editingDbId = null;
+                document.getElementById('btn-submit').innerText = 'SIMPAN KE BUKU KAS';
+                document.getElementById('input-nominal').value = '';
+                document.getElementById('input-desc').value = '';
+            }
+
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('border-orange-500', 'text-orange-600');
+                el.classList.add('border-transparent', 'text-slate-500');
+            });
+
+            const activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.remove('border-transparent', 'text-slate-500');
+            activeTab.classList.add('border-orange-500', 'text-orange-600');
+        }
+
+    </script>
+</body>
+</html>
