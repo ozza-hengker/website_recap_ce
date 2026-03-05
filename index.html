@@ -262,7 +262,6 @@
             measurementId: "G-21VHXPZ048"
         };
 
-        // Logic cerdas: Kalau dibuka di Canvas, pakai punya Canvas. Kalau diupload ke GitHub, otomatis pakai punya Ozza!
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : ozzaFirebaseConfig;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'ce-2026-portal';
 
@@ -296,7 +295,7 @@
         // LOGIKA DATABASE (FIREBASE FIRESTORE)
         // ====================================================================================
         
-        // 1. Auth Otomatis (Database perlu verifikasi pengguna anonim)
+        // 1. Auth Otomatis
         async function initAuth() {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -557,7 +556,7 @@
             }
         }
 
-        // Submit form (Create / Update ke Firebase)
+        // Submit form (Create / Update ke Firebase) DENGAN SISTEM TIMEOUT
         document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -579,16 +578,20 @@
             submitBtn.innerText = 'MENYIMPAN...';
 
             try {
-                if (editingDbId) {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
-                    await updateDoc(docRef, txData);
-                    editingDbId = null;
-                    alert('Data berhasil diperbarui di Database!');
-                } else {
-                    const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
-                    await addDoc(txRef, txData);
-                    alert('Data berhasil disimpan ke Database!');
-                }
+                // Siapkan tugas simpan data
+                const saveTask = editingDbId 
+                    ? updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId), txData)
+                    : addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), txData);
+                
+                // Siapkan hitung mundur 8 detik
+                const timeoutTask = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 8000));
+
+                // Lakukan balapan (Promise.race) antara tugas simpan vs waktu 8 detik
+                await Promise.race([saveTask, timeoutTask]);
+
+                // Kalau masuk ke sini, artinya berhasil tersimpan sebelum 8 detik!
+                editingDbId = null;
+                alert('Data berhasil disimpan ke Server secara permanen!');
                 
                 // Reset Form
                 submitBtn.innerText = 'SIMPAN KE BUKU KAS';
@@ -600,8 +603,10 @@
                 window.switchTab('riwayat');
 
             } catch (error) {
-                console.error("Gagal menyimpan:", error);
-                alert("Gagal menghubungi server database!");
+                // Kalau masuk ke sini, artinya tersumbat/melebihi 8 detik
+                console.error("Gagal menyimpan atau Time Out:", error);
+                alert("GAGAL TERSIMPAN! Koneksi terblokir.\n\nSaran: Matikan Adblocker / Shield Vivaldi, lalu muat ulang (Refresh) halaman web ini.");
+                
                 submitBtn.disabled = false;
                 submitBtn.innerText = editingDbId ? 'UPDATE TRANSAKSI' : 'SIMPAN KE BUKU KAS';
             }
