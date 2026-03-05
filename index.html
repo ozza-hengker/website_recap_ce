@@ -60,9 +60,9 @@
                 </button>
             </form>
 
-            <!-- Info Kredensial (Untuk Testing Saja) -->
+            <!-- Info Kredensial -->
             <div class="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-200 text-left">
-                <p class="text-xs font-bold text-orange-800 mb-2">🔐 DAFTAR AKUN (TESTING):</p>
+                <p class="text-xs font-bold text-orange-800 mb-2">🔐 DAFTAR AKUN:</p>
                 <div class="text-xs text-orange-700 grid grid-cols-2 gap-2">
                     <div><b>Vice Chief:</b><br/>User: <code>admin</code><br/>Pass: <code>123</code></div>
                     <div><b>PJ SGE:</b><br/>User: <code>sge</code><br/>Pass: <code>123</code></div>
@@ -242,29 +242,28 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (DENGAN FIREBASE) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (DENGAN FIREBASE MILIK OZZA) -->
     <script type="module">
-        // Import Firebase dari CDN Resmi
+        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ====================================================================================
-        // KONFIGURASI DATABASE FIREBASE UNTUK GITHUB PAGES (DIBACA YA OZZA!)
+        // KONFIGURASI DATABASE MILIK OZZA (global-recap-ce)
         // ====================================================================================
-        // Saat kamu hosting ini di GitHub Pages nanti, kamu harus membuat akun Firebase gratis di console.firebase.google.com
-        // Lalu, paste config project kamu ke variabel 'defaultConfig' di bawah ini:
-        const defaultConfig = {
-            apiKey: "API_KEY_DARI_FIREBASE",
-            authDomain: "PROJECT_KAMU.firebaseapp.com",
-            projectId: "PROJECT_KAMU",
-            storageBucket: "PROJECT_KAMU.appspot.com",
-            messagingSenderId: "MESSAGING_SENDER_ID",
-            appId: "APP_ID_KAMU"
+        const ozzaFirebaseConfig = {
+            apiKey: "AIzaSyAyfY7_Mh5DvtB8xMbC_zh1Ng7R7zat91A",
+            authDomain: "global-recap-ce.firebaseapp.com",
+            projectId: "global-recap-ce",
+            storageBucket: "global-recap-ce.firebasestorage.app",
+            messagingSenderId: "654872100642",
+            appId: "1:654872100642:web:132a872a4e3091185a2f7b",
+            measurementId: "G-21VHXPZ048"
         };
 
-        // Ini logika agar saat di Canvas dia pakai database Canvas, saat di Github pakai database Ozza
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultConfig;
+        // Logic cerdas: Kalau dibuka di Canvas, pakai punya Canvas. Kalau diupload ke GitHub, otomatis pakai punya Ozza!
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : ozzaFirebaseConfig;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'ce-2026-portal';
 
         // Inisialisasi Firebase
@@ -300,10 +299,8 @@
         // 1. Auth Otomatis (Database perlu verifikasi pengguna anonim)
         async function initAuth() {
             try {
-                // Di Canvas kita pakai token kustom jika ada, kalau tidak login anonim
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     // Hanya ada di lingkungan Canvas khusus
-                    // Abaikan di GitHub Pages
                 }
                 await signInAnonymously(auth);
             } catch (error) {
@@ -328,19 +325,15 @@
                         transactions.push({ dbId: doc.id, ...doc.data() });
                     });
                     
-                    // Setelah data terbaru ditarik, perbarui tampilan Web
                     if (currentUser) updateUI();
                 }, (error) => {
                     console.error("Error fetching data:", error);
-                    alert("Gagal memuat database!");
                 });
             }
         });
 
         // ====================================================================================
         // FUNGSI UI & INTERAKSI FRONTEND
-        // Karena kita pakai module script (import), kita harus menempelkan fungsi ke window
-        // agar tombol di HTML (onclick) bisa memanggilnya.
         // ====================================================================================
 
         lucide.createIcons();
@@ -464,7 +457,6 @@
                 return;
             }
 
-            // Urutkan berdasarkan waktu data dibuat (terbaru di atas)
             const sortedTx = [...visibleTransactions].sort((a,b) => b.createdAt - a.createdAt);
 
             sortedTx.forEach(t => {
@@ -558,10 +550,9 @@
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
                     await deleteDoc(docRef);
-                    // UI akan terupdate otomatis via onSnapshot listener
                 } catch (error) {
                     console.error("Gagal menghapus:", error);
-                    alert("Gagal menghapus data dari server.");
+                    alert("Gagal menghapus data dari server. Pastikan koneksi internet aktif.");
                 }
             }
         }
@@ -580,7 +571,7 @@
                 type: document.getElementById('input-type').value,
                 nominal: parseInt(document.getElementById('input-nominal').value),
                 desc: document.getElementById('input-desc').value,
-                createdAt: Date.now() // Digunakan untuk mengurutkan (sort) transaksi terbaru
+                createdAt: Date.now() 
             };
 
             const submitBtn = document.getElementById('btn-submit');
@@ -607,7 +598,6 @@
                 document.getElementById('input-date').valueAsDate = new Date();
                 
                 window.switchTab('riwayat');
-                // UI terupdate otomatis oleh listener Firebase
 
             } catch (error) {
                 console.error("Gagal menyimpan:", error);
