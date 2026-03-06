@@ -7,8 +7,8 @@
     
     <!-- SCRIPT PENGHANCUR CACHE (Otomatis buang versi error yang lama) -->
     <script>
-        if (!window.location.search.includes('v=final_rtdb_ozza')) {
-            window.location.replace(window.location.pathname + '?v=final_rtdb_ozza' + window.location.hash);
+        if (!window.location.search.includes('v=no_cache_login_bugfix')) {
+            window.location.replace(window.location.pathname + '?v=no_cache_login_bugfix' + window.location.hash);
         }
     </script>
 
@@ -99,7 +99,7 @@
                             <span id="user-badge" class="bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded border border-white/30 flex items-center gap-1 shadow-sm">
                                 <i data-lucide="user" class="w-3 h-3"></i> <span id="user-role-text">Global</span>
                             </span>
-                            <span id="db-status" class="bg-amber-400/20 text-amber-200 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-400/30 flex items-center gap-1 shadow-sm">
+                            <span id="db-status" class="bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm">
                                 <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Menghubungkan...
                             </span>
                         </div>
@@ -361,9 +361,13 @@
             }
         }
 
-        let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
-        let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
+        // Variabel Session Direset saat Reload
+        let currentUser = null; 
+        let activeTab = 'dashboard';
         let syncInterval = null; 
+        
+        // HASH Data untuk mendeteksi perubahan (Solusi Anti-Lag)
+        let currentDataHash = '';
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -396,17 +400,6 @@
             return parseInt(val.replace(/[^0-9]/g, '')) || 0;
         }
 
-        // Init App & Langsung Masuk
-        if (currentUser) {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('user-role-text').innerText = currentUser === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + currentUser;
-            
-            updateUI(); 
-            setTimeout(() => window.switchTab(activeTab), 100);
-            startSync(); 
-        }
-
         const today = new Date();
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('report-month').value = currentMonthString;
@@ -414,15 +407,18 @@
         setTimeout(() => safeCreateIcons(), 500);
 
         // =========================================================================
-        // MENGAMBIL DATA FETCH AMAN (ANTI STUCK/NGEBLANK)
+        // MENGAMBIL DATA MENGGUNAKAN FIREBASE REALTIME DB API (Paling ringan!)
         // =========================================================================
         window.fetchDatabase = async function() {
+            if (RTDB_URL === 'PASTE_URL_REALTIME_DATABASE_DISINI') return;
+
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
+                // Tambah akhiran .json sesuai standar Realtime Database API
                 const response = await fetch(`${RTDB_URL}/transactions.json`);
-                if (!response.ok) throw new Error("Gagal load database");
+                if (!response.ok) throw new Error('Network response was not ok');
                 
                 const data = await response.json();
                 let fetchedTxs = [];
@@ -433,12 +429,17 @@
                     }
                 }
 
-                transactions = fetchedTxs;
-                if (currentUser) updateUI(); // Render ulang setelah dapat data baru
+                // SMART SYNC: Hanya render ulang kalau data benar-benar berubah (Solusi CPU Lag)
+                const newHash = JSON.stringify(fetchedTxs);
+                if (newHash !== currentDataHash) {
+                    transactions = fetchedTxs;
+                    currentDataHash = newHash;
+                    if (currentUser) updateUI();
+                }
 
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '✅ RTDB Online';
+                    dbStatusEl.innerHTML = '✅ RTDB Aktif';
                     dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
                 }
 
@@ -446,7 +447,7 @@
                 console.error("Fetch DB Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Koneksi Putus';
+                    dbStatusEl.innerHTML = '❌ Terputus';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
@@ -455,10 +456,11 @@
             }
         };
 
+        // Interval diperlonggar jadi 30 detik untuk hemat memori
         function startSync() {
             fetchDatabase(); 
             if (!syncInterval) {
-                syncInterval = setInterval(fetchDatabase, 15000); // Sinkronisasi setiap 15 detik (cukup stabil)
+                syncInterval = setInterval(fetchDatabase, 30000); 
             }
         }
 
@@ -471,6 +473,11 @@
 
         window.handleLogin = function(e) {
             e.preventDefault();
+
+            if (RTDB_URL === 'PASTE_URL_REALTIME_DATABASE_DISINI') {
+                alert("❌ SETUP DATABASE BELUM SELESAI!\nSilakan masukkan URL Firebase Realtime Database di baris kode 593.");
+                return;
+            }
 
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
@@ -488,7 +495,6 @@
 
         function login(role) {
             currentUser = role;
-            localStorage.setItem('ce_logged_in_role', role);
 
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
@@ -518,8 +524,6 @@
 
         window.logout = function() {
             currentUser = null;
-            localStorage.removeItem('ce_logged_in_role');
-            localStorage.removeItem('ce_active_tab');
             stopSync(); 
 
             document.getElementById('login-screen').classList.remove('hidden');
@@ -979,7 +983,6 @@
             }
 
             activeTab = tabId;
-            localStorage.setItem('ce_active_tab', tabId);
 
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.getElementById('view-' + tabId).classList.remove('hidden');
