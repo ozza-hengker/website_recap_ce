@@ -90,8 +90,8 @@
                             <span id="user-badge" class="bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded border border-white/30 flex items-center gap-1 shadow-sm">
                                 <i data-lucide="user" class="w-3 h-3"></i> <span id="user-role-text">Global</span>
                             </span>
-                            <span id="db-status" class="bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm">
-                                <i data-lucide="zap" class="w-3 h-3"></i> Terhubung
+                            <span id="db-status" class="bg-amber-500/20 text-amber-200 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1 shadow-sm">
+                                <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Menghubungkan...
                             </span>
                         </div>
                     </div>
@@ -248,7 +248,7 @@
                         </div>
 
                         <button type="submit" id="btn-submit" class="w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500">
-                            <i data-lucide="save" class="w-5 h-5"></i> SIMPAN KE BUKU KAS
+                            <i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER
                         </button>
                     </form>
                 </div>
@@ -330,31 +330,14 @@
             </div>
 
         </main>
-        
-        <!-- BANNER Peringatan Adblocker (Vivaldi Shield) -->
-        <div id="offline-banner" class="hidden fixed bottom-6 right-6 left-6 md:left-auto md:w-[450px] bg-rose-600 text-white p-5 rounded-2xl shadow-2xl z-50 border-2 border-rose-400 fade-in">
-            <div class="flex items-start gap-4">
-                <div class="bg-white/20 p-3 rounded-full flex-shrink-0">
-                    <i data-lucide="shield-alert" class="w-8 h-8 text-white animate-pulse"></i>
-                </div>
-                <div>
-                    <h4 class="font-black text-lg mb-1">KONEKSI DIBLOKIR BROWSER!</h4>
-                    <p class="text-sm text-rose-100 leading-relaxed mb-3">
-                        Ada data yang belum masuk ke server Google karena ditahan oleh Tameng Vivaldi. <br><br>
-                        <b>CARA MENGATASINYA:</b><br>
-                        Klik ikon <b>Tameng Merah (Shield)</b> di pojok kanan atas (samping URL/VPN), lalu pilih <b>"No Blocking"</b>. Setelah itu refresh web ini!
-                    </p>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (KEMBALI KE NATIVE FIREBASE SDK) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (NATIVE CLOUD SYNC) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // PENTING: Kita menggunakan getFirestore biasa tanpa cache lokal agar sinkronisasi murni dari server
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const ozzaFirebaseConfig = {
             apiKey: "AIzaSyAyfY7_Mh5DvtB8xMbC_zh1Ng7R7zat91A",
@@ -371,12 +354,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        
-        // Memakai mesin Native Firebase yang otomatis menyimpan ke harddisk jika offline/diblokir
-        const db = initializeFirestore(app, {
-            localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}),
-            experimentalForceLongPolling: true 
-        });
+        const db = getFirestore(app); // Mode Murni Online
 
         let currentUser = null; 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
@@ -416,6 +394,7 @@
                 await signInAnonymously(auth);
             } catch (error) {
                 console.error("Auth error:", error);
+                alert("Sistem Gagal Terhubung ke Autentikasi Google. Mohon periksa koneksi internet Anda.");
             }
         }
         initAuth();
@@ -424,6 +403,7 @@
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('report-month').value = currentMonthString;
 
+        // REAL-TIME LISTENER LANGSUNG DARI SERVER GOOGLE
         onAuthStateChanged(auth, (user) => {
             const dbStatusEl = document.getElementById('db-status');
             if (user) {
@@ -433,42 +413,17 @@
 
                 const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
                 
-                // DENGARKAN PERUBAHAN DATABASE TERMASUK JIKA ADA YANG NYANGKUT
-                onSnapshot(txRef, { includeMetadataChanges: true }, (snapshot) => {
-                    const tempTxs = [];
-                    let hasPendingData = false;
-
+                onSnapshot(txRef, (snapshot) => {
+                    const loadedTxs = [];
                     snapshot.forEach(doc => {
-                        const data = doc.data();
-                        // Firebase otomatis menandai data yang nyangkut (diblokir adblock/offline)
-                        const isPending = doc.metadata.hasPendingWrites; 
-                        if(isPending) hasPendingData = true;
-
-                        tempTxs.push({ 
-                            dbId: doc.id, 
-                            isPending: isPending,
-                            ...data 
-                        });
+                        loadedTxs.push({ dbId: doc.id, ...doc.data() });
                     });
 
-                    transactions = tempTxs;
-                    
-                    // Tampilkan Peringatan Merah jika Vivaldi memblokir pengiriman
-                    const offlineBanner = document.getElementById('offline-banner');
-                    if (hasPendingData) {
-                        offlineBanner.classList.remove('hidden');
-                        dbStatusEl.innerHTML = '<i data-lucide="shield-alert" class="w-3 h-3"></i> Diblokir Browser';
-                        dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
-                    } else {
-                        offlineBanner.classList.add('hidden');
-                        dbStatusEl.innerHTML = '<i data-lucide="cloud-lightning" class="w-3 h-3"></i> Tembus Server';
-                        dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
-                    }
-                    
+                    transactions = loadedTxs;
                     if (currentUser) updateUI();
-                    lucide.createIcons();
                 }, (error) => {
-                    console.error("Error fetching data:", error);
+                    console.error("Snapshot error:", error);
+                    alert("Koneksi Real-time Terputus: " + error.message);
                 });
             }
         });
@@ -805,16 +760,11 @@
                 const isPemasukan = t.type === 'pemasukan';
                 const tagCategory = t.category !== 'UMUM' ? `<span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] uppercase font-black mr-2">${t.category}</span>` : '';
                 
-                // Indikator data nyangkut karena Vivaldi Shield
-                const syncStatus = t.isPending 
-                    ? '<span class="text-[10px] text-rose-500 font-bold ml-2 flex items-center inline-flex bg-rose-50 px-2 py-0.5 rounded border border-rose-200 animate-pulse" title="Menunggu Tameng Vivaldi Dimatikan"><i data-lucide="loader" class="w-3 h-3 mr-1 animate-spin"></i> Menunggu Koneksi</span>' 
-                    : '';
-                
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50/80 transition-colors group">
                         <td class="p-4 text-sm font-medium text-slate-500">${t.date}</td>
                         <td class="p-4">
-                            <div class="font-black text-slate-700 text-sm flex items-center">${t.proker} ${syncStatus}</div>
+                            <div class="font-black text-slate-700 text-sm flex items-center">${t.proker}</div>
                             <div class="text-sm text-slate-600 mt-1 flex items-center">
                                 ${tagCategory} ${t.desc}
                             </div>
@@ -896,19 +846,24 @@
             window.switchTab('input');
         }
 
+        // Fungsi Hapus Murni Terhubung Server
         window.deleteTx = async function(dbId) {
-            if(confirm('Yakin ingin menghapus transaksi ini?')) {
+            if(confirm('Yakin ingin menghapus transaksi ini permanen dari server?')) {
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
-                    // Gunakan mode tanpa await agar instan di UI lokal
-                    deleteDoc(docRef).catch(err => console.error(err));
+                    await deleteDoc(docRef);
+                    alert("✅ Data terhapus dari server!");
                 } catch(err) {
                     console.error(err);
+                    alert("❌ Gagal menghapus! Pastikan internet stabil dan matikan adblocker/shield Vivaldi.");
                 }
             }
         }
 
-        document.getElementById('transaction-form').addEventListener('submit', function(e) {
+        // =========================================================================
+        // WAJIB MENUNGGU SERVER FIREBASE SEBELUM BILANG SUKSES
+        // =========================================================================
+        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -930,30 +885,46 @@
                 createdAt: Date.now() 
             };
 
-            // Mengirim ke Firebase tanpa menunggu respon (Fire and Forget)
-            // Firebase akan langsung menyimpannya di Brankas Lokal dan mencoba ngirim ke server
-            if (editingDbId) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
-                updateDoc(docRef, txData).catch(err => console.error(err));
-            } else {
-                const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
-                addDoc(txRef, txData).catch(err => console.error(err));
-            }
-            
-            editingDbId = null;
-
-            // Langsung Reset UI detik itu juga
             const submitBtn = document.getElementById('btn-submit');
-            submitBtn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> SIMPAN KE BUKU KAS';
-            submitBtn.disabled = false;
-            submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
+            const originalText = submitBtn.innerHTML;
             
-            document.getElementById('input-nominal').value = '';
-            document.getElementById('input-desc').value = '';
-            document.getElementById('input-date').valueAsDate = new Date();
-            
+            // Ubah tombol jadi loading muter-muter
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> MENGIRIM KE SERVER...';
+            submitBtn.disabled = true;
             lucide.createIcons();
-            window.switchTab('riwayat');
+
+            try {
+                // Tembak langsung ke Firebase dan tunggu!
+                if (editingDbId) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
+                    await updateDoc(docRef, txData);
+                } else {
+                    const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
+                    await addDoc(txRef, txData);
+                }
+                
+                // Kalau kode sampai sini, BERARTI 1.000.000% SUKSES MASUK GOOGLE
+                alert("✅ SUKSES TERSIMPAN DI SERVER!\n\nData kamu sudah real-time. Coba cek di HP, pasti langsung muncul!");
+                
+                // Reset Form
+                document.getElementById('input-nominal').value = '';
+                document.getElementById('input-desc').value = '';
+                document.getElementById('input-date').valueAsDate = new Date();
+                editingDbId = null;
+                
+                window.switchTab('riwayat');
+
+            } catch (error) {
+                console.error("Save Error:", error);
+                // INI YANG AKAN MUNCUL KALAU VIVALDI/ADBLOCKER MEMBLOKIR
+                alert("❌ GAGAL MENGIRIM KE SERVER!\n\nAlasan: " + error.message + "\n\nSistem Vivaldi/WiFi kamu memblokir pengiriman. SILAKAN MATIKAN TAMENG MERAH (Shield) di pojok kanan atas browsermu, lalu coba simpan lagi!");
+            } finally {
+                // Kembalikan tombol seperti semula
+                submitBtn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> SIMPAN KE BUKU KAS';
+                submitBtn.disabled = false;
+                submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
+                lucide.createIcons();
+            }
         });
 
         window.switchTab = function(tabId) {
