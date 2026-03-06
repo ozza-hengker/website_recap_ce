@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Keuangan CE 2026</title>
     
+    <!-- SCRIPT PENGHANCUR CACHE CHROME (Memaksa web memuat kode paling baru) -->
+    <script>
+        if (!window.location.search.includes('v=rtdb_super_fast')) {
+            window.location.replace(window.location.pathname + '?v=rtdb_super_fast' + window.location.hash);
+        }
+    </script>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons CDN -->
@@ -15,7 +22,7 @@
     <style>
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         @media print {
@@ -92,8 +99,8 @@
                             <span id="user-badge" class="bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded border border-white/30 flex items-center gap-1 shadow-sm">
                                 <i data-lucide="user" class="w-3 h-3"></i> <span id="user-role-text">Global</span>
                             </span>
-                            <span id="db-status" class="bg-amber-400/20 text-amber-200 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-400/30 flex items-center gap-1 shadow-sm">
-                                <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Menghubungkan...
+                            <span id="db-status" class="bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm">
+                                <i data-lucide="database" class="w-3 h-3"></i> RTDB Aktif
                             </span>
                         </div>
                     </div>
@@ -339,47 +346,28 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (VANILLA JS 100% ANTI CRASH) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (FIREBASE REALTIME DB - SUPER NGEBUT & ANTI LAG) -->
     <script>
-        // Failsafe Super Kuat: Jika ikon gagal dimuat oleh WiFi, web tidak akan meledak!
+        // ===================================================================================
+        // ⚠️ MASUKKAN URL FIREBASE REALTIME DATABASE DI SINI ⚠️
+        // Contoh: 'https://global-recap-ce-default-rtdb.asia-southeast1.firebasedatabase.app'
+        // JANGAN LUPA HAPUS TANDA GARIS MIRING DI BELAKANG (/) KALAU ADA
+        // ===================================================================================
+        const RTDB_URL = 'PASTE_URL_REALTIME_DATABASE_DISINI'; 
+
+        // Failsafe Ikon (Anti-Crash)
         function safeCreateIcons() {
             if (typeof lucide !== 'undefined') {
-                try { lucide.createIcons(); } catch(e) { console.warn("Lucide err", e); }
+                try { lucide.createIcons(); } catch(e) {}
             }
         }
 
-        // ===================================================================================
-        // KONFIGURASI SUPABASE MURNI (JALUR BAWAH TANAH ANTI BLOKIR)
-        // ===================================================================================
-        const SUPABASE_URL = 'https://yhkzwbsckswgnqtmsabr.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inloa3p3YnNja3N3Z25xdG1zYWJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NzU5ODcsImV4cCI6MjA4ODM1MTk4N30.Xp5ywrJYon0_NsgiKr_SfSpXlOWh1Ml4AuIJrCkQhY4';
-
-        const reqHeaders = {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-        };
-
-        // Custom Fetch dengan Timeout (Biar tombol nggak muter-muter selamanya)
-        async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeoutMs);
-            try {
-                const response = await fetch(url, { ...options, signal: controller.signal });
-                clearTimeout(id);
-                return response;
-            } catch (error) {
-                clearTimeout(id);
-                throw error;
-            }
-        }
-
-        // --- SISTEM ANTI LOGOUT (MEMORI BROWSER) ---
         let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
         let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
         let syncInterval = null; 
-        let isFirstLoad = true;
+        
+        // HASH Data untuk mendeteksi perubahan (Solusi Anti-Lag)
+        let currentDataHash = '';
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -430,64 +418,60 @@
         setTimeout(() => safeCreateIcons(), 500);
 
         // =========================================================================
-        // MENGAMBIL DATA DENGAN VANILLA FETCH (ANTI NGE-STUCK)
+        // MENGAMBIL DATA MENGGUNAKAN FIREBASE REALTIME DB API (Paling ringan!)
         // =========================================================================
         window.fetchDatabase = async function() {
+            if (RTDB_URL === 'PASTE_URL_REALTIME_DATABASE_DISINI') return;
+
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/transactions?select=*&order=created_at.desc`, {
-                    method: 'GET',
-                    headers: reqHeaders
-                });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(errText);
-                }
+                // Tambah akhiran .json sesuai standar Realtime Database API
+                const response = await fetch(`${RTDB_URL}/transactions.json`);
+                if (!response.ok) throw new Error('Network response was not ok');
                 
                 const data = await response.json();
+                let fetchedTxs = [];
                 
-                transactions = data.map(t => ({
-                    dbId: t.id,
-                    date: t.date,
-                    proker: t.proker,
-                    category: t.category,
-                    type: t.type,
-                    nominal: parseInt(t.nominal),
-                    desc: t.description,
-                    createdAt: parseInt(t.created_at)
-                }));
+                if (data) {
+                    for (let key in data) {
+                        fetchedTxs.push({ dbId: key, ...data[key] });
+                    }
+                }
 
-                if (currentUser) updateUI();
-                isFirstLoad = false;
+                // SMART SYNC: Hanya render ulang kalau data benar-benar berubah (Solusi CPU Lag)
+                const newHash = JSON.stringify(fetchedTxs);
+                if (newHash !== currentDataHash) {
+                    transactions = fetchedTxs;
+                    currentDataHash = newHash;
+                    if (currentUser) updateUI();
+                }
 
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '✅ Tembus Server';
+                    dbStatusEl.innerHTML = '✅ RTDB Aktif';
                     dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
                 }
 
             } catch (err) {
-                console.error("Fetch API Gagal:", err);
+                console.error("Fetch DB Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Terputus (Offline)';
+                    dbStatusEl.innerHTML = '❌ Terputus';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
                 const btnRefresh = document.getElementById('btn-refresh');
-                if(btnRefresh) {
-                    btnRefresh.innerHTML = '🔄 Segarkan Data';
-                }
+                if(btnRefresh) btnRefresh.innerHTML = '🔄 Segarkan Data';
             }
         };
 
+        // Interval diperlonggar jadi 30 detik untuk hemat memori
         function startSync() {
             fetchDatabase(); 
             if (!syncInterval) {
-                syncInterval = setInterval(fetchDatabase, 10000); 
+                syncInterval = setInterval(fetchDatabase, 30000); 
             }
         }
 
@@ -500,6 +484,11 @@
 
         window.handleLogin = function(e) {
             e.preventDefault();
+
+            if (RTDB_URL === 'PASTE_URL_REALTIME_DATABASE_DISINI') {
+                alert("❌ SETUP DATABASE BELUM SELESAI!\nSilakan masukkan URL Firebase Realtime Database di baris kode 593.");
+                return;
+            }
 
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
@@ -634,10 +623,9 @@
 
             if(currentUser !== 'GLOBAL') return;
 
-            // Failsafe super kuat untuk Chart.js (Agar web tidak mati kalau grafik diblokir wifi)
+            // Failsafe agar Chart.js tidak membuat web crash/freeze
             if (typeof Chart === 'undefined') {
-                console.warn("Chart.js gagal dimuat oleh WiFi. Melewati render grafik.");
-                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm">Grafik tidak dapat ditampilkan karena koneksi ke library grafik diblokir oleh jaringan Anda. Fitur lain tetap berjalan normal.</div>';
+                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold">Menunggu Modul Grafik...</div>';
                 return;
             }
 
@@ -905,10 +893,9 @@
         window.deleteTx = async function(dbId) {
             if(confirm('Yakin ingin menghapus transaksi ini permanen dari server?')) {
                 try {
-                    const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/transactions?id=eq.${dbId}`, {
-                        method: 'DELETE',
-                        headers: reqHeaders
-                    }, 10000);
+                    const response = await fetch(`${RTDB_URL}/transactions/${dbId}.json`, {
+                        method: 'DELETE'
+                    });
 
                     if (!response.ok) throw new Error("Gagal hapus");
                     
@@ -921,7 +908,7 @@
         }
 
         // =========================================================================
-        // EKSEKUSI SIMPAN - 100% VANILLA API FETCH (DILENGKAPI TIMEOUT 12 DETIK)
+        // EKSEKUSI SIMPAN - PURE REST API JSON FIREBASE 
         // =========================================================================
         document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -941,34 +928,36 @@
                 category: categoryVal,
                 type: document.getElementById('input-type').value,
                 nominal: cleanNominal, 
-                description: document.getElementById('input-desc').value, 
-                created_at: Date.now() 
+                desc: document.getElementById('input-desc').value, 
+                createdAt: Date.now() 
             };
 
             const submitBtn = document.getElementById('btn-submit');
-            
-            // Ubah teks tanpa pakai ikon Lucide agar tidak crash kalau diblokir
             submitBtn.innerHTML = '⏳ MENGIRIM KE SERVER...';
             submitBtn.disabled = true;
 
             try {
+                // Tentukan endpoint untuk Tambah (POST) atau Update (PATCH)
                 const fetchUrl = editingDbId 
-                    ? `${SUPABASE_URL}/rest/v1/transactions?id=eq.${editingDbId}`
-                    : `${SUPABASE_URL}/rest/v1/transactions`;
+                    ? `${RTDB_URL}/transactions/${editingDbId}.json`
+                    : `${RTDB_URL}/transactions.json`;
                 
                 const fetchMethod = editingDbId ? 'PATCH' : 'POST';
 
-                // Tembak API pakai batas waktu 12 detik
-                const response = await fetchWithTimeout(fetchUrl, {
-                    method: fetchMethod,
-                    headers: reqHeaders,
-                    body: JSON.stringify(txData)
-                }, 12000);
+                // Tembak Data pakai batas waktu aman 15 detik
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(errText);
-                }
+                const response = await fetch(fetchUrl, {
+                    method: fetchMethod,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(txData),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error("Gagal menyimpan ke server");
                 
                 alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Server dan otomatis tersinkronisasi ke seluruh PJ.");
                 
@@ -981,11 +970,11 @@
                 window.switchTab('riwayat');
 
             } catch (error) {
-                console.error("Supabase Save Error:", error);
-                if (error.name === 'AbortError' || error.message === 'signal is aborted without reason') {
-                    alert(`❌ KONEKSI SANGAT LAMBAT ATAU TERPUTUS!\n\nProses pengiriman dibatalkan paksa karena internetmu ngadat (Timeout 12 detik). Silakan periksa jaringanmu lalu klik Simpan lagi.`);
+                console.error("Save Error:", error);
+                if (error.name === 'AbortError') {
+                    alert(`❌ KONEKSI LAMBAT!\n\nProses dihentikan paksa karena internetmu tidak stabil. Silakan periksa jaringan dan coba lagi.`);
                 } else {
-                    alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan Server: ${error.message}\n\nPastikan koneksi internet kamu menyala dengan baik.`);
+                    alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nServer memblokir pengiriman. Pastikan Setup Firebase Realtime Database sudah benar.`);
                 }
             } finally {
                 submitBtn.innerHTML = '☁️ SIMPAN KE SERVER';
