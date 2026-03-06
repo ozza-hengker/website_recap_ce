@@ -908,14 +908,19 @@
                 updateUI();
 
                 if (!dbId.toString().startsWith('temp_')) {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
-                    deleteDoc(docRef).catch(err => console.error("Hapus background gagal:", err));
+                    // PENGGUNAAN REST API UNTUK DELETE
+                    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${ozzaFirebaseConfig.projectId}/databases/(default)/documents/artifacts/${appId}/public/data/transactions/${dbId}`;
+                    
+                    fetch(firestoreUrl, {
+                        method: 'DELETE'
+                    }).catch(err => console.error("REST Delete Error:", err));
                 }
             }
         }
 
         // =========================================================================
-        // FITUR BARU: TOMBOL SINKRONISASI MANUAL
+        // FITUR BARU: TOMBOL SINKRONISASI MANUAL MENGGUNAKAN REST API FETCH
+        // Bypass blokir WebSocket Firebase
         // =========================================================================
         window.syncOfflineData = async function() {
             const unsyncedTxs = transactions.filter(t => t.dbId && t.dbId.toString().startsWith('temp_'));
@@ -932,13 +937,35 @@
 
             let successCount = 0;
             
+            // Format URL REST API Firestore
+            const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${ozzaFirebaseConfig.projectId}/databases/(default)/documents/artifacts/${appId}/public/data/transactions`;
+
             for (const tx of unsyncedTxs) {
-                const { dbId, ...pureData } = tx; // Hapus ID temp sebelum diupload
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), pureData);
-                    successCount++;
+                    // Konversi data JSON ke format Document Firestore REST API
+                    const firestoreDoc = {
+                        fields: {
+                            date: { stringValue: tx.date },
+                            proker: { stringValue: tx.proker },
+                            category: { stringValue: tx.category },
+                            type: { stringValue: tx.type },
+                            nominal: { integerValue: tx.nominal.toString() },
+                            desc: { stringValue: tx.desc },
+                            createdAt: { integerValue: tx.createdAt.toString() }
+                        }
+                    };
+
+                    const response = await fetch(firestoreUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(firestoreDoc)
+                    });
+
+                    if(response.ok) {
+                        successCount++;
+                    }
                 } catch (err) {
-                    console.error("Gagal upload transaksi:", err);
+                    console.error("REST Upload Error:", err);
                 }
             }
 
@@ -947,9 +974,12 @@
             lucide.createIcons();
 
             if (successCount > 0) {
-                alert(`✅ BERHASIL! ${successCount} data telah terkirim ke Server Google. Sekarang HP kamu sudah bisa melihat data ini!`);
+                alert(`✅ BERHASIL! ${successCount} data sukses menembus blokir dan terkirim ke Server Google. Sekarang HP kamu sudah bisa melihat data ini!`);
+                // Data sukses terkirim lewat REST API, tapi SDK Firebase mungkin belum nyadar.
+                // Paksa refresh web supaya dia fetch ulang dari server.
+                window.location.reload(); 
             } else {
-                alert(`❌ GAGAL MENGIRIM!\n\nPastikan ekstensi AdBlocker (Logo Merah) di pojok kanan atas browsermu dimatikan/di-pause untuk web ini.`);
+                alert(`❌ GAGAL MENGIRIM!\n\nKoneksi benar-benar terputus. Pastikan kamu sudah terhubung ke internet.`);
             }
         }
 
@@ -988,12 +1018,44 @@
             
             localStorage.setItem('ce_offline_backup', JSON.stringify(transactions));
 
+            // Coba kirim data lewat REST API secara diam-diam
             if (editingDbId && !editingDbId.toString().startsWith('temp_')) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
-                updateDoc(docRef, txData).catch(err => console.error(err));
+                const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${ozzaFirebaseConfig.projectId}/databases/(default)/documents/artifacts/${appId}/public/data/transactions/${editingDbId}`;
+                const firestoreDoc = {
+                    fields: {
+                        date: { stringValue: txData.date },
+                        proker: { stringValue: txData.proker },
+                        category: { stringValue: txData.category },
+                        type: { stringValue: txData.type },
+                        nominal: { integerValue: txData.nominal.toString() },
+                        desc: { stringValue: txData.desc },
+                        createdAt: { integerValue: txData.createdAt.toString() }
+                    }
+                };
+                fetch(firestoreUrl + '?updateMask.fieldPaths=date&updateMask.fieldPaths=proker&updateMask.fieldPaths=category&updateMask.fieldPaths=type&updateMask.fieldPaths=nominal&updateMask.fieldPaths=desc', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(firestoreDoc)
+                }).catch(err => console.log("REST Patch failed", err));
+
             } else {
-                const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
-                addDoc(txRef, txData).catch(err => console.error(err));
+                 const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${ozzaFirebaseConfig.projectId}/databases/(default)/documents/artifacts/${appId}/public/data/transactions`;
+                 const firestoreDoc = {
+                    fields: {
+                        date: { stringValue: txData.date },
+                        proker: { stringValue: txData.proker },
+                        category: { stringValue: txData.category },
+                        type: { stringValue: txData.type },
+                        nominal: { integerValue: txData.nominal.toString() },
+                        desc: { stringValue: txData.desc },
+                        createdAt: { integerValue: txData.createdAt.toString() }
+                    }
+                };
+                fetch(firestoreUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(firestoreDoc)
+                }).catch(err => console.log("REST Post failed", err));
             }
             
             editingDbId = null;
