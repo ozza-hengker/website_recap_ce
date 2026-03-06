@@ -718,18 +718,24 @@
             window.switchTab('input');
         }
 
-        // Hapus Data Tanpa Loading, sinkronisasi dibalik layar
-        window.deleteTx = function(dbId) {
-            if(confirm('Yakin ingin menghapus transaksi ini?')) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
-                deleteDoc(docRef).catch(err => console.error("Hapus background gagal:", err));
+        // Hapus Data dengan Verifikasi Server
+        window.deleteTx = async function(dbId) {
+            if(confirm('Yakin ingin menghapus transaksi ini dari server?')) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
+                    await deleteDoc(docRef);
+                    alert("Berhasil dihapus permanen dari database!");
+                } catch(err) {
+                    console.error("Gagal menghapus:", err);
+                    alert("Gagal menghapus data! Pastikan koneksi internet stabil dan Adblocker/VPN mati.");
+                }
             }
         }
 
         // =========================================================================
-        // FORM SUBMIT DENGAN SISTEM MODE KILAT (OFFLINE-FIRST)
+        // FORM SUBMIT DENGAN SISTEM MODE WAJIB AMAN (TUNGGU SERVER)
         // =========================================================================
-        document.getElementById('transaction-form').addEventListener('submit', function(e) {
+        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -746,26 +752,36 @@
             };
 
             const submitBtn = document.getElementById('btn-submit');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'MENYIMPAN KE SERVER (JANGAN TUTUP WEB)...';
             
-            // Firebase "Latency Compensation"
-            if (editingDbId) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
-                updateDoc(docRef, txData).catch(err => console.error("Update background gagal:", err));
-                editingDbId = null;
-            } else {
-                const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
-                addDoc(txRef, txData).catch(err => console.error("Tambah background gagal:", err));
+            try {
+                // WAJIB menunggu respon dari server Google Firebase
+                if (editingDbId) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
+                    await updateDoc(docRef, txData);
+                    editingDbId = null;
+                } else {
+                    const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
+                    await addDoc(txRef, txData);
+                }
+                
+                alert('SUKSES! Data sudah aman tersimpan permanen di Database Google.');
+                
+                submitBtn.innerText = 'SIMPAN KE BUKU KAS';
+                submitBtn.disabled = false;
+                document.getElementById('input-nominal').value = '';
+                document.getElementById('input-desc').value = '';
+                document.getElementById('input-date').valueAsDate = new Date();
+                
+                window.switchTab('riwayat');
+            } catch (error) {
+                console.error("Error menyimpan ke database:", error);
+                alert("GAGAL MENYIMPAN! Koneksimu diblokir oleh Adblocker/VPN atau jaringan WiFi (Firewall). Tolong matikan dan coba lagi.");
+                
+                submitBtn.innerText = editingDbId ? 'UPDATE TRANSAKSI' : 'SIMPAN KE BUKU KAS';
+                submitBtn.disabled = false;
             }
-            
-            alert('Sukses! Data langsung tercatat di tabel. (Sistem akan mengupload ke server saat koneksi internet stabil).');
-            
-            submitBtn.innerText = 'SIMPAN KE BUKU KAS';
-            submitBtn.disabled = false;
-            document.getElementById('input-nominal').value = '';
-            document.getElementById('input-desc').value = '';
-            document.getElementById('input-date').valueAsDate = new Date();
-            
-            window.switchTab('riwayat');
         });
 
         window.switchTab = function(tabId) {
