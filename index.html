@@ -5,18 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Keuangan CE 2026</title>
     
-    <!-- SCRIPT PENGHANCUR CACHE CHROME (Memaksa web memuat kode paling baru) -->
-    <script>
-        if (!window.location.search.includes('v=bebas_blokir_100')) {
-            window.location.replace(window.location.pathname + '?v=bebas_blokir_100' + window.location.hash);
-        }
-    </script>
-
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js CDN (Pindah ke Cloudflare agar anti-blokir) -->
+    <!-- Chart.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     
     <style>
@@ -99,8 +92,8 @@
                             <span id="user-badge" class="bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded border border-white/30 flex items-center gap-1 shadow-sm">
                                 <i data-lucide="user" class="w-3 h-3"></i> <span id="user-role-text">Global</span>
                             </span>
-                            <span id="db-status" class="bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm">
-                                <i data-lucide="database" class="w-3 h-3"></i> Supabase Aktif
+                            <span id="db-status" class="bg-amber-400/20 text-amber-200 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-400/30 flex items-center gap-1 shadow-sm">
+                                <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Menghubungkan...
                             </span>
                         </div>
                     </div>
@@ -232,10 +225,10 @@
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aliran Dana</label>
                             <div class="grid grid-cols-2 gap-4">
                                 <button type="button" id="btn-pemasukan" onclick="setTxType('pemasukan')" class="tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-emerald-500 bg-emerald-50 text-emerald-600 shadow-sm flex items-center justify-center gap-2">
-                                    <i data-lucide="arrow-down-left" class="w-5 h-5"></i> PEMASUKAN
+                                    <span id="icon-pemasukan">⬇️</span> PEMASUKAN
                                 </button>
                                 <button type="button" id="btn-pengeluaran" onclick="setTxType('pengeluaran')" class="tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-slate-200 bg-white text-slate-400 hover:border-rose-200 hover:text-rose-500 flex items-center justify-center gap-2">
-                                    <i data-lucide="arrow-up-right" class="w-5 h-5"></i> PENGELUARAN
+                                    <span id="icon-pengeluaran">↗️</span> PENGELUARAN
                                 </button>
                             </div>
                             <input type="hidden" id="input-type" value="pemasukan">
@@ -257,7 +250,7 @@
                         </div>
 
                         <button type="submit" id="btn-submit" class="w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500">
-                            <i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER
+                            ☁️ SIMPAN KE SERVER
                         </button>
                     </form>
                 </div>
@@ -267,11 +260,13 @@
             <div id="view-riwayat" class="view-section fade-in space-y-6 hidden">
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
-                        <div class="bg-teal-100 p-2 rounded-lg border border-teal-200"><i data-lucide="history" class="text-teal-700"></i></div>
+                        <div class="bg-teal-100 p-2 rounded-lg border border-teal-200">
+                            <i data-lucide="history" class="text-teal-700"></i>
+                        </div>
                         <h2 id="riwayat-title" class="text-2xl font-black text-slate-800">Buku Kas (Riwayat)</h2>
                     </div>
                     <button onclick="fetchDatabase()" id="btn-refresh" class="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm py-2 px-4 rounded-lg font-bold flex items-center gap-2 transition-colors active:scale-95">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 text-teal-600"></i> Segarkan Data
+                        🔄 Segarkan Data
                     </button>
                 </div>
 
@@ -311,7 +306,7 @@
                         </div>
                         <div class="w-px h-8 bg-slate-200"></div>
                         <button onclick="window.print()" class="no-print bg-slate-800 text-white py-2 px-4 rounded-xl hover:bg-slate-900 transition-all active:scale-95 flex items-center gap-2 font-bold shadow-md">
-                            <i data-lucide="printer" class="w-4 h-4"></i> Cetak PDF
+                            🖨️ Cetak PDF
                         </button>
                     </div>
                 </div>
@@ -344,8 +339,15 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (100% PURE VANILLA JS - NO EXTERNAL SUPABASE LIBRARY) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (VANILLA JS 100% ANTI CRASH) -->
     <script>
+        // Failsafe Super Kuat: Jika ikon gagal dimuat oleh WiFi, web tidak akan meledak!
+        function safeCreateIcons() {
+            if (typeof lucide !== 'undefined') {
+                try { lucide.createIcons(); } catch(e) { console.warn("Lucide err", e); }
+            }
+        }
+
         // ===================================================================================
         // KONFIGURASI SUPABASE MURNI (JALUR BAWAH TANAH ANTI BLOKIR)
         // ===================================================================================
@@ -359,10 +361,25 @@
             'Prefer': 'return=representation'
         };
 
+        // Custom Fetch dengan Timeout (Biar tombol nggak muter-muter selamanya)
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                throw error;
+            }
+        }
+
         // --- SISTEM ANTI LOGOUT (MEMORI BROWSER) ---
         let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
         let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
         let syncInterval = null; 
+        let isFirstLoad = true;
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -410,7 +427,7 @@
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('report-month').value = currentMonthString;
 
-        setTimeout(() => lucide.createIcons(), 500);
+        setTimeout(() => safeCreateIcons(), 500);
 
         // =========================================================================
         // MENGAMBIL DATA DENGAN VANILLA FETCH (ANTI NGE-STUCK)
@@ -418,9 +435,9 @@
         window.fetchDatabase = async function() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
-                if(btnRefresh) btnRefresh.innerHTML = '<i data-lucide="loader" class="w-4 h-4 text-teal-600 animate-spin"></i> Loading...';
+                if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/transactions?select=*&order=created_at.desc`, {
+                const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/transactions?select=*&order=created_at.desc`, {
                     method: 'GET',
                     headers: reqHeaders
                 });
@@ -444,10 +461,11 @@
                 }));
 
                 if (currentUser) updateUI();
+                isFirstLoad = false;
 
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '<i data-lucide="database" class="w-3 h-3"></i> Tembus Server';
+                    dbStatusEl.innerHTML = '✅ Tembus Server';
                     dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
                 }
 
@@ -455,14 +473,13 @@
                 console.error("Fetch API Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '<i data-lucide="wifi-off" class="w-3 h-3"></i> Terputus';
+                    dbStatusEl.innerHTML = '❌ Terputus (Offline)';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) {
-                    btnRefresh.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4 text-teal-600"></i> Segarkan Data';
-                    lucide.createIcons();
+                    btnRefresh.innerHTML = '🔄 Segarkan Data';
                 }
             }
         };
@@ -525,7 +542,7 @@
 
             window.toggleSGEDropdown();
             startSync(); 
-            setTimeout(() => lucide.createIcons(), 50);
+            setTimeout(() => safeCreateIcons(), 50);
         }
 
         window.logout = function() {
@@ -550,7 +567,7 @@
                 renderLaporanAF(); 
             }
             renderRiwayat();
-            lucide.createIcons();
+            safeCreateIcons();
         }
 
         function updateHeaderNetto() {
@@ -571,7 +588,7 @@
             const chartDataIn = [];
             const chartDataOut = [];
             const chartDataBalance = [];
-            const pieColors = ['#f59e0b', '#0d9488', '#06b6d4']; // Amber, Teal, Cyan
+            const pieColors = ['#f59e0b', '#0d9488', '#06b6d4']; 
 
             prokers.forEach((proker) => {
                 const txProker = transactions.filter(t => t.proker === proker);
@@ -595,11 +612,11 @@
                         <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-4 group-hover:text-teal-600 transition-colors">${proker}</h3>
                         <div class="space-y-3 mb-5">
                             <div class="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
-                                <span class="text-slate-500 font-medium flex items-center gap-1"><i data-lucide="arrow-down-left" class="w-3 h-3 text-emerald-500"></i> Masuk</span>
+                                <span class="text-slate-500 font-medium flex items-center gap-1">↙️ Masuk</span>
                                 <span class="font-bold text-emerald-600">${formatRp(inTotal)}</span>
                             </div>
                             <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-500 font-medium flex items-center gap-1"><i data-lucide="arrow-up-right" class="w-3 h-3 text-rose-500"></i> Keluar</span>
+                                <span class="text-slate-500 font-medium flex items-center gap-1">↗️ Keluar</span>
                                 <span class="font-bold text-rose-600">${formatRp(outTotal)}</span>
                             </div>
                         </div>
@@ -616,6 +633,13 @@
             document.getElementById('global-out').innerText = formatRp(totalOut);
 
             if(currentUser !== 'GLOBAL') return;
+
+            // Failsafe super kuat untuk Chart.js (Agar web tidak mati kalau grafik diblokir wifi)
+            if (typeof Chart === 'undefined') {
+                console.warn("Chart.js gagal dimuat oleh WiFi. Melewati render grafik.");
+                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm">Grafik tidak dapat ditampilkan karena koneksi ke library grafik diblokir oleh jaringan Anda. Fitur lain tetap berjalan normal.</div>';
+                return;
+            }
 
             if (barChartObj) {
                 barChartObj.data.datasets[0].data = chartDataIn;
@@ -676,7 +700,6 @@
 
             document.getElementById('af-summary-cards').innerHTML = `
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-teal-900 text-xl">SGE MARKET HUB</h3>
                         <span class="bg-teal-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
@@ -705,7 +728,6 @@
                 </div>
 
                 <div class="bg-gradient-to-br from-cyan-50 to-white rounded-3xl p-8 border border-cyan-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-cyan-900 text-xl">STRATEGIC P.</h3>
                         <span class="bg-cyan-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 70:30</span>
@@ -811,10 +833,10 @@
                         <td class="p-4 text-center no-print align-middle">
                             <div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="editTx('${t.dbId}')" class="p-2 bg-white border border-slate-200 text-blue-500 hover:bg-blue-50 hover:border-blue-200 rounded-lg transition-all shadow-sm" title="Edit Transaksi">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                    ✏️
                                 </button>
                                 <button onclick="deleteTx('${t.dbId}')" class="p-2 bg-white border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 rounded-lg transition-all shadow-sm" title="Hapus Transaksi">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    🗑️
                                 </button>
                             </div>
                         </td>
@@ -873,33 +895,33 @@
             document.getElementById('input-desc').value = tx.desc;
 
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5"></i> PERBARUI TRANSAKSI';
+            btnSubmit.innerHTML = '🔄 PERBARUI TRANSAKSI';
             btnSubmit.className = "w-full py-4 mt-4 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2";
             
-            lucide.createIcons();
+            safeCreateIcons();
             window.switchTab('input');
         }
 
         window.deleteTx = async function(dbId) {
             if(confirm('Yakin ingin menghapus transaksi ini permanen dari server?')) {
                 try {
-                    const response = await fetch(`${SUPABASE_URL}/rest/v1/transactions?id=eq.${dbId}`, {
+                    const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/transactions?id=eq.${dbId}`, {
                         method: 'DELETE',
                         headers: reqHeaders
-                    });
+                    }, 10000);
 
                     if (!response.ok) throw new Error("Gagal hapus");
                     
                     alert("✅ Data berhasil dihapus dari server!");
                     fetchDatabase(); 
                 } catch(err) {
-                    alert(`❌ Gagal menghapus!`);
+                    alert(`❌ Gagal menghapus! Pastikan internet menyala.`);
                 }
             }
         }
 
         // =========================================================================
-        // EKSEKUSI SIMPAN - 100% VANILLA API FETCH
+        // EKSEKUSI SIMPAN - 100% VANILLA API FETCH (DILENGKAPI TIMEOUT 12 DETIK)
         // =========================================================================
         document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -925,9 +947,9 @@
 
             const submitBtn = document.getElementById('btn-submit');
             
-            submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> MENGIRIM KE SERVER...';
+            // Ubah teks tanpa pakai ikon Lucide agar tidak crash kalau diblokir
+            submitBtn.innerHTML = '⏳ MENGIRIM KE SERVER...';
             submitBtn.disabled = true;
-            lucide.createIcons();
 
             try {
                 const fetchUrl = editingDbId 
@@ -936,11 +958,12 @@
                 
                 const fetchMethod = editingDbId ? 'PATCH' : 'POST';
 
-                const response = await fetch(fetchUrl, {
+                // Tembak API pakai batas waktu 12 detik
+                const response = await fetchWithTimeout(fetchUrl, {
                     method: fetchMethod,
                     headers: reqHeaders,
                     body: JSON.stringify(txData)
-                });
+                }, 12000);
 
                 if (!response.ok) {
                     const errText = await response.text();
@@ -959,12 +982,16 @@
 
             } catch (error) {
                 console.error("Supabase Save Error:", error);
-                alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan Server: ${error.message}\n\nPastikan koneksi internet kamu menyala dengan baik.`);
+                if (error.name === 'AbortError' || error.message === 'signal is aborted without reason') {
+                    alert(`❌ KONEKSI SANGAT LAMBAT ATAU TERPUTUS!\n\nProses pengiriman dibatalkan paksa karena internetmu ngadat (Timeout 12 detik). Silakan periksa jaringanmu lalu klik Simpan lagi.`);
+                } else {
+                    alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan Server: ${error.message}\n\nPastikan koneksi internet kamu menyala dengan baik.`);
+                }
             } finally {
-                submitBtn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER';
+                submitBtn.innerHTML = '☁️ SIMPAN KE SERVER';
                 submitBtn.disabled = false;
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
-                lucide.createIcons();
+                safeCreateIcons();
             }
         });
 
@@ -976,11 +1003,11 @@
             if (tabId !== 'input' && editingDbId) {
                 editingDbId = null;
                 const submitBtn = document.getElementById('btn-submit');
-                submitBtn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER';
+                submitBtn.innerHTML = '☁️ SIMPAN KE SERVER';
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
                 document.getElementById('input-nominal').value = '';
                 document.getElementById('input-desc').value = '';
-                lucide.createIcons();
+                safeCreateIcons();
             }
 
             activeTab = tabId;
