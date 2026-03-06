@@ -261,6 +261,9 @@
                         <div class="bg-teal-100 p-2 rounded-lg border border-teal-200"><i data-lucide="history" class="text-teal-700"></i></div>
                         <h2 id="riwayat-title" class="text-2xl font-black text-slate-800">Buku Kas (Riwayat)</h2>
                     </div>
+                    <button onclick="fetchDatabase()" id="btn-refresh" class="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm py-2 px-4 rounded-lg font-bold flex items-center gap-2 transition-colors active:scale-95">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-teal-600"></i> Segarkan Data
+                    </button>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -332,30 +335,27 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (SUPABASE JS SDK + ANTI LAG) -->
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/+esm';
-
+    <!-- SCRIPT JAVASCRIPT UTAMA (RAW REST API SUPABASE - 100% TEMBUS BLOCKER) -->
+    <script>
         // ===================================================================================
-        // KUNCI SUPABASE (URL & ANON KEY)
+        // KONFIGURASI SUPABASE MURNI (JALUR BAWAH TANAH)
         // ===================================================================================
         const SUPABASE_URL = 'https://yhkzwbsckswgnqtmsabr.supabase.co';
-        
-        // ⚠️ MASUKKAN KUNCI ANON PUBLIC DI SINI (YANG PANJANG BANGET DAN DIAWALI 'eyJ')
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inloa3p3YnNja3N3Z25xdG1zYWJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NzU5ODcsImV4cCI6MjA4ODM1MTk4N30.Xp5ywrJYon0_NsgiKr_SfSpXlOWh1Ml4AuIJrCkQhY4';
 
-        // Validasi Otomatis agar Ozza tidak pusing lagi
-        if (SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('eyJ')) {
-            alert("⚠️ PERINGATAN SISTEM: Kunci Supabase-mu SALAH! Kunci 'anon public' yang asli pasti diawali dengan teks 'eyJ'. Silakan cek kembali di Supabase > Settings > API.");
-        }
-
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Headers sakti untuk nembus server
+        const reqHeaders = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+        };
 
         // --- SISTEM ANTI LOGOUT (MEMORI BROWSER) ---
         let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
         let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
         let syncInterval = null; 
-        let isFirstLoad = true; // Penanda untuk mencegah blank dashboard
+        let isFirstLoad = true;
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -394,9 +394,7 @@
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-role-text').innerText = currentUser === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + currentUser;
             
-            // PAKSA RENDER UI AGAR TIDAK BLANK SAAT PERTAMA KALI DIBUKA
             updateUI(); 
-            
             setTimeout(() => window.switchTab(activeTab), 100);
             startSync(); 
         }
@@ -405,22 +403,29 @@
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('report-month').value = currentMonthString;
 
-        lucide.createIcons();
+        setTimeout(() => lucide.createIcons(), 500);
 
         // =========================================================================
-        // LOGIKA DATABASE MENGGUNAKAN SUPABASE DENGAN SMART SYNC
+        // MENGAMBIL DATA PAKAI FETCH (ANTI LAG & ANTI BLOCKER)
         // =========================================================================
         window.fetchDatabase = async function() {
-            if (SUPABASE_ANON_KEY === 'PASTE_KUNCI_ANON_YANG_PANJANG_DIAWALI_eyJ_DISINI') return; 
-
             try {
-                // Ambil data dari Supabase
-                const { data, error } = await supabase
-                    .from('transactions')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                // Beri efek loading di tombol segarkan
+                const btnRefresh = document.getElementById('btn-refresh');
+                if(btnRefresh) btnRefresh.innerHTML = '<i data-lucide="loader" class="w-4 h-4 text-teal-600 animate-spin"></i> Loading...';
+
+                // Tembak REST API Supabase langsung
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/transactions?select=*&order=created_at.desc`, {
+                    method: 'GET',
+                    headers: reqHeaders
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || 'Gagal terhubung');
+                }
                 
-                if (error) throw error;
+                const data = await response.json();
                 
                 const fetchedTxs = data.map(t => ({
                     dbId: t.id,
@@ -436,7 +441,6 @@
                 const newDataString = JSON.stringify(fetchedTxs);
                 const oldDataString = JSON.stringify(transactions);
 
-                // Update UI HANYA jika data berubah ATAU saat baru pertama kali diload
                 if (newDataString !== oldDataString || isFirstLoad) {
                     transactions = fetchedTxs;
                     if (currentUser) updateUI();
@@ -448,20 +452,21 @@
                 if(dbStatusEl) {
                     dbStatusEl.innerHTML = '<i data-lucide="database" class="w-3 h-3"></i> Supabase Aktif';
                     dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
-                    lucide.createIcons();
                 }
 
-                return true;
             } catch (err) {
-                console.error("Fetch Supabase Gagal:", err);
-                // Ubah status jadi Error
+                console.error("Fetch API Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '<i data-lucide="wifi-off" class="w-3 h-3"></i> API Error';
+                    dbStatusEl.innerHTML = '<i data-lucide="wifi-off" class="w-3 h-3"></i> Terputus';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
+                }
+            } finally {
+                const btnRefresh = document.getElementById('btn-refresh');
+                if(btnRefresh) {
+                    btnRefresh.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4 text-teal-600"></i> Segarkan Data';
                     lucide.createIcons();
                 }
-                return false;
             }
         };
 
@@ -481,11 +486,6 @@
 
         window.handleLogin = function(e) {
             e.preventDefault();
-
-            if (SUPABASE_ANON_KEY === 'PASTE_KUNCI_ANON_YANG_PANJANG_DIAWALI_eyJ_DISINI') {
-                alert("❌ KODE HTML BELUM SELESAI!\nKamu belum menempelkan (paste) API Key yang panjang di dalam kode HTML-nya.");
-                return;
-            }
 
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
@@ -509,7 +509,6 @@
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-role-text').innerText = role === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + role;
             
-            // Render UI langsung agar tidak blank!
             updateUI();
 
             if(role === 'GLOBAL') {
@@ -536,7 +535,7 @@
             currentUser = null;
             localStorage.removeItem('ce_logged_in_role');
             localStorage.removeItem('ce_active_tab');
-            stopSync(); // Hentikan narik data saat keluar
+            stopSync(); 
 
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
@@ -548,7 +547,6 @@
         function updateUI() {
             if(!currentUser) return;
             
-            // Render elemen sesuai tab (Menghindari render berlebihan pada elemen tersembunyi)
             updateHeaderNetto();
             if(currentUser === 'GLOBAL') {
                 renderDashboard();
@@ -594,7 +592,6 @@
                 chartDataOut.push(outTotal);
                 chartDataBalance.push(balance > 0 ? balance : 0); 
 
-                // Akumulasi HTML Tanpa Membebani DOM berkali-kali
                 cardsHTML += `
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-teal-300 transition-all relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-16 h-16 bg-slate-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-teal-50 transition-colors"></div>
@@ -617,18 +614,16 @@
                 `;
             });
 
-            // Tembak ke DOM sekali saja
             document.getElementById('proker-cards').innerHTML = cardsHTML;
             document.getElementById('global-in').innerText = formatRp(totalIn);
             document.getElementById('global-out').innerText = formatRp(totalOut);
 
             if(currentUser !== 'GLOBAL') return;
 
-            // UPDATE GRAFIK HALUS (TIDAK LAGI MENGHANCURKAN GRAFIK SETIAP KALI UPDATE)
             if (barChartObj) {
                 barChartObj.data.datasets[0].data = chartDataIn;
                 barChartObj.data.datasets[1].data = chartDataOut;
-                barChartObj.update('none'); // Update instan tanpa re-render total
+                barChartObj.update('none'); 
             } else {
                 const ctxBar = document.getElementById('barChart').getContext('2d');
                 barChartObj = new Chart(ctxBar, {
@@ -797,7 +792,6 @@
 
             const sortedTx = [...visibleTransactions].sort((a,b) => b.createdAt - a.createdAt);
 
-            // String Building Cepat Anti-Lag
             sortedTx.forEach(t => {
                 const isPemasukan = t.type === 'pemasukan';
                 const tagCategory = t.category !== 'UMUM' ? `<span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] uppercase font-black mr-2">${t.category}</span>` : '';
@@ -889,28 +883,31 @@
             window.switchTab('input');
         }
 
-        // Eksekusi Hapus Langsung di Supabase
+        // Eksekusi Hapus Lewat Raw Fetch
         window.deleteTx = async function(dbId) {
             if(confirm('Yakin ingin menghapus transaksi ini permanen dari server?')) {
                 try {
-                    const { error } = await supabase
-                        .from('transactions')
-                        .delete()
-                        .eq('id', dbId);
-                    
-                    if (error) throw error;
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/transactions?id=eq.${dbId}`, {
+                        method: 'DELETE',
+                        headers: reqHeaders
+                    });
+
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        throw new Error(errData.message || errData.hint || 'Gagal hapus');
+                    }
 
                     alert("✅ Data berhasil dihapus dari server!");
-                    fetchDatabase(); // reload data otomatis
+                    fetchDatabase(); 
                 } catch(err) {
                     console.error("Gagal Hapus:", err);
-                    alert("❌ Gagal menghapus! Pastikan kamu ada koneksi internet.");
+                    alert(`❌ Gagal menghapus!\nAlasan: ${err.message}`);
                 }
             }
         }
 
         // =========================================================================
-        // EKSEKUSI SIMPAN - WAJIB TERHUBUNG SERVER & PAKE TIMEOUT
+        // EKSEKUSI SIMPAN - JALUR BAWAH TANAH API (ANTI BLOCK)
         // =========================================================================
         document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -942,22 +939,27 @@
             lucide.createIcons();
 
             try {
-                // Buat Janji/Misi Mengirim ke Supabase
-                const saveMission = editingDbId 
-                    ? supabase.from('transactions').update(txData).eq('id', editingDbId)
-                    : supabase.from('transactions').insert([txData]);
-
-                // Buat Timer Kematian (12 detik). Kalau internet nyangkut, paksa gagal!
-                const timeoutMission = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("TIMEOUT")), 12000)
-                );
-
-                // Jalankan Balapan (Mana yang duluan selesai)
-                const result = await Promise.race([saveMission, timeoutMission]);
-
-                if (result && result.error) throw result.error;
+                // Tentukan endpoint apakah Insert(POST) atau Update(PATCH)
+                const fetchUrl = editingDbId 
+                    ? `${SUPABASE_URL}/rest/v1/transactions?id=eq.${editingDbId}`
+                    : `${SUPABASE_URL}/rest/v1/transactions`;
                 
-                // KALAU SAMPAI SINI BERARTI 1 JUTA PERSEN DATANYA SUDAH MASUK GOOGLE/SUPABASE
+                const fetchMethod = editingDbId ? 'PATCH' : 'POST';
+
+                // Tembak Data ke Google/Supabase
+                const response = await fetch(fetchUrl, {
+                    method: fetchMethod,
+                    headers: reqHeaders,
+                    body: JSON.stringify(txData)
+                });
+
+                // Kalau RLS belum dimatikan atau ada salah, dia akan nangkap pesan error aslinya
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.message || errData.hint || errData.details || 'Gagal Autentikasi Supabase');
+                }
+                
+                // KALAU SAMPAI SINI BERARTI 1 JUTA PERSEN DATANYA SUDAH MASUK
                 alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Supabase dan otomatis tersinkronisasi ke seluruh PJ.");
                 
                 // Bersihkan layar input
@@ -972,13 +974,14 @@
 
             } catch (error) {
                 console.error("Supabase Save Error:", error);
-                let pesanError = error.message || error.details || "Gagal Autentikasi";
                 
-                if (pesanError === "TIMEOUT") {
-                    alert("❌ KONEKSI TERPUTUS / LAMBAT!\n\nProses dihentikan paksa. Silakan perbaiki WiFi lalu coba lagi.");
-                } else {
-                    alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan: ${pesanError}\n\nPastikan Anon Key Supabase-mu benar (diawali dengan 'eyJ').`);
+                // Pesan Error Spesifik untuk membantu Ozza Debugging
+                let extraMessage = "";
+                if (error.message.includes("row-level security")) {
+                    extraMessage = "\n\n💡 SOLUSI: Masuk ke Supabase > Table Editor > transactions > Klik tulisan 'RLS is enabled' di pojok kanan atas, lalu pilih 'Disable RLS'.";
                 }
+
+                alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan Server: ${error.message}${extraMessage}`);
             } finally {
                 // Kembalikan tombol seperti semula agar bisa ditekan lagi
                 submitBtn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER';
@@ -989,7 +992,6 @@
         });
 
         window.switchTab = function(tabId) {
-            // Pengaman: Jika PJ biasa nyoba akses Dashboard/Laporan, otomatis dilempar ke form Input
             if (currentUser !== 'GLOBAL' && (tabId === 'dashboard' || tabId === 'laporan')) {
                 tabId = 'input';
             }
@@ -1004,7 +1006,6 @@
                 lucide.createIcons();
             }
 
-            // ANTI LOGOUT: Mengingat tab terakhir yang dibuka
             activeTab = tabId;
             localStorage.setItem('ce_active_tab', tabId);
 
