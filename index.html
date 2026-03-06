@@ -332,13 +332,12 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (SUPABASE JS SDK) -->
-    <!-- Import Supabase melalui CDN ESM -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (SUPABASE JS SDK + ANTI LAG) -->
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/+esm';
 
         // ===================================================================================
-        // KUNCI SUPABASE (Ubah dengan API KEY milikmu)
+        // KUNCI SUPABASE (URL & ANON KEY)
         // ===================================================================================
         const SUPABASE_URL = 'https://yhkzwbsckswgnqtmsabr.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_AYrOHGCmmUujL30mGCenug_FcEbBOmM';
@@ -348,6 +347,7 @@
         // --- SISTEM ANTI LOGOUT (MEMORI BROWSER) ---
         let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
         let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
+        let syncInterval = null; // Penampung interval agar tidak dobel
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -386,10 +386,7 @@
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-role-text').innerText = currentUser === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + currentUser;
             setTimeout(() => window.switchTab(activeTab), 100);
-            fetchDatabase(); // Ambil data
-            
-            // Polling otomatis tiap 10 detik biar datanya nyambung ke semua device
-            setInterval(fetchDatabase, 10000); 
+            startSync(); // Mulai penarikan data
         }
 
         const today = new Date();
@@ -399,13 +396,13 @@
         lucide.createIcons();
 
         // =========================================================================
-        // LOGIKA DATABASE MENGGUNAKAN SUPABASE
+        // LOGIKA DATABASE MENGGUNAKAN SUPABASE DENGAN SMART SYNC
         // =========================================================================
         window.fetchDatabase = async function() {
-            if (SUPABASE_URL === 'ISI_DENGAN_URL_SUPABASE_MU') return; // Skip if not setup
+            if (SUPABASE_URL === 'ISI_DENGAN_URL_SUPABASE_MU') return; 
 
             try {
-                // Mengambil data dari tabel 'transactions', diurutkan dari yang terbaru
+                // Ambil data dari Supabase
                 const { data, error } = await supabase
                     .from('transactions')
                     .select('*')
@@ -413,8 +410,7 @@
                 
                 if (error) throw error;
                 
-                // Konversi data ke format web kita
-                transactions = data.map(t => ({
+                const fetchedTxs = data.map(t => ({
                     dbId: t.id,
                     date: t.date,
                     proker: t.proker,
@@ -425,7 +421,14 @@
                     createdAt: t.created_at
                 }));
 
-                if (currentUser) updateUI();
+                // Cek Perubahan Data: Hanya Update UI jika data benar-benar berubah (Anti Lag!)
+                const newDataString = JSON.stringify(fetchedTxs);
+                const oldDataString = JSON.stringify(transactions);
+
+                if (newDataString !== oldDataString) {
+                    transactions = fetchedTxs;
+                    if (currentUser) updateUI();
+                }
                 return true;
             } catch (err) {
                 console.error("Fetch Supabase Gagal:", err);
@@ -433,13 +436,24 @@
             }
         };
 
+        // Fungsi Memulai Interval Tunggal
+        function startSync() {
+            fetchDatabase(); 
+            if (!syncInterval) {
+                syncInterval = setInterval(fetchDatabase, 10000); 
+            }
+        }
+
+        // Fungsi Menghentikan Interval
+        function stopSync() {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+        }
+
         window.handleLogin = function(e) {
             e.preventDefault();
-
-            if (SUPABASE_URL === 'ISI_DENGAN_URL_SUPABASE_MU') {
-                alert("❌ TOLONG SETUP SUPABASE DULU!\nKamu belum memasukkan URL dan API Key Supabase di dalam kode HTML-nya.");
-                return;
-            }
 
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
@@ -457,7 +471,6 @@
 
         function login(role) {
             currentUser = role;
-            // ANTI LOGOUT: Mengukir status login ke memori browser
             localStorage.setItem('ce_logged_in_role', role);
 
             document.getElementById('login-screen').classList.add('hidden');
@@ -480,18 +493,15 @@
             }
 
             window.toggleSGEDropdown();
-            fetchDatabase(); // Panggil data pertama kali
-            // Jalankan sinkronisasi tiap 10 detik
-            setInterval(fetchDatabase, 10000);
-            
+            startSync(); // Mulai narik data
             setTimeout(() => lucide.createIcons(), 50);
         }
 
         window.logout = function() {
             currentUser = null;
-            // HAPUS MEMORI JIKA KLIK KELUAR
             localStorage.removeItem('ce_logged_in_role');
             localStorage.removeItem('ce_active_tab');
+            stopSync(); // Hentikan narik data saat keluar
 
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
@@ -502,12 +512,14 @@
 
         function updateUI() {
             if(!currentUser) return;
+            
+            // Render elemen sesuai tab (Menghindari render berlebihan pada elemen tersembunyi)
+            updateHeaderNetto();
             if(currentUser === 'GLOBAL') {
                 renderDashboard();
                 renderLaporanAF(); 
             }
             renderRiwayat();
-            updateHeaderNetto();
             lucide.createIcons();
         }
 
@@ -523,8 +535,7 @@
 
         function renderDashboard() {
             let totalIn = 0, totalOut = 0;
-            const cardsContainer = document.getElementById('proker-cards');
-            cardsContainer.innerHTML = ''; 
+            let cardsHTML = ''; 
 
             const chartLabels = [];
             const chartDataIn = [];
@@ -532,7 +543,7 @@
             const chartDataBalance = [];
             const pieColors = ['#f59e0b', '#0d9488', '#06b6d4']; // Amber, Teal, Cyan
 
-            prokers.forEach((proker, index) => {
+            prokers.forEach((proker) => {
                 const txProker = transactions.filter(t => t.proker === proker);
                 const inTotal = txProker.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
                 const outTotal = txProker.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -548,7 +559,8 @@
                 chartDataOut.push(outTotal);
                 chartDataBalance.push(balance > 0 ? balance : 0); 
 
-                cardsContainer.innerHTML += `
+                // Akumulasi HTML Tanpa Membebani DOM berkali-kali
+                cardsHTML += `
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-teal-300 transition-all relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-16 h-16 bg-slate-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-teal-50 transition-colors"></div>
                         <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-4 group-hover:text-teal-600 transition-colors">${proker}</h3>
@@ -570,65 +582,44 @@
                 `;
             });
 
+            // Tembak ke DOM sekali saja
+            document.getElementById('proker-cards').innerHTML = cardsHTML;
             document.getElementById('global-in').innerText = formatRp(totalIn);
             document.getElementById('global-out').innerText = formatRp(totalOut);
 
             if(currentUser !== 'GLOBAL') return;
 
-            if (barChartObj) barChartObj.destroy(); 
-            const ctxBar = document.getElementById('barChart').getContext('2d');
-            barChartObj = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [
-                        {
-                            label: 'Pemasukan',
-                            data: chartDataIn,
-                            backgroundColor: '#0d9488', 
-                            borderRadius: 6,
-                            barPercentage: 0.6
-                        },
-                        {
-                            label: 'Pengeluaran',
-                            data: chartDataOut,
-                            backgroundColor: '#f59e0b', 
-                            borderRadius: 6,
-                            barPercentage: 0.6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { callback: function(value) { return 'Rp ' + (value/1000) + 'k'; } } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
+            // UPDATE GRAFIK HALUS (TIDAK LAGI MENGHANCURKAN GRAFIK SETIAP KALI UPDATE)
+            if (barChartObj) {
+                barChartObj.data.datasets[0].data = chartDataIn;
+                barChartObj.data.datasets[1].data = chartDataOut;
+                barChartObj.update('none'); // Update instan tanpa re-render total
+            } else {
+                const ctxBar = document.getElementById('barChart').getContext('2d');
+                barChartObj = new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [
+                            { label: 'Pemasukan', data: chartDataIn, backgroundColor: '#0d9488', borderRadius: 6, barPercentage: 0.6 },
+                            { label: 'Pengeluaran', data: chartDataOut, backgroundColor: '#f59e0b', borderRadius: 6, barPercentage: 0.6 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }, scales: { y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { callback: function(value) { return 'Rp ' + (value/1000) + 'k'; } } }, x: { grid: { display: false } } } }
+                });
+            }
 
-            if (pieChartObj) pieChartObj.destroy();
-            const ctxPie = document.getElementById('pieChart').getContext('2d');
-            pieChartObj = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        data: chartDataBalance,
-                        backgroundColor: pieColors,
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
-                }
-            });
+            if (pieChartObj) {
+                pieChartObj.data.datasets[0].data = chartDataBalance;
+                pieChartObj.update('none');
+            } else {
+                const ctxPie = document.getElementById('pieChart').getContext('2d');
+                pieChartObj = new Chart(ctxPie, {
+                    type: 'doughnut',
+                    data: { labels: chartLabels, datasets: [{ data: chartDataBalance, backgroundColor: pieColors, borderWidth: 0, hoverOffset: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } }
+                });
+            }
         }
 
         window.renderLaporanAF = function() {
@@ -656,8 +647,7 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
-            const summaryContainer = document.getElementById('af-summary-cards');
-            summaryContainer.innerHTML = `
+            document.getElementById('af-summary-cards').innerHTML = `
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
@@ -717,18 +707,15 @@
                 </div>
             `;
 
-            const tbody = document.getElementById('af-table-body');
-            const tfoot = document.getElementById('af-table-foot');
-            tbody.innerHTML = '';
-
             let totalIn = 0;
             let totalOut = 0;
+            let tbodyHTML = '';
 
             const sortedMonthTx = [...filteredTx].sort((a,b) => a.date.localeCompare(b.date));
 
             if (sortedMonthTx.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi di bulan ini.</td></tr>`;
-                tfoot.innerHTML = '';
+                document.getElementById('af-table-body').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi di bulan ini.</td></tr>`;
+                document.getElementById('af-table-foot').innerHTML = '';
                 return;
             }
 
@@ -740,7 +727,7 @@
                 const badgeColor = t.proker === 'SGE MARKET HUB' ? 'bg-teal-100 text-teal-700 border-teal-200' : 
                                    t.proker === 'STRATEGIC PARTNERSHIP' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' : 'bg-slate-200 text-slate-700 border-slate-300';
 
-                tbody.innerHTML += `
+                tbodyHTML += `
                     <tr class="hover:bg-slate-50">
                         <td class="p-4 text-slate-500">${t.date}</td>
                         <td class="p-4"><span class="${badgeColor} border px-2 py-1 rounded-md text-[10px] uppercase font-black tracking-wide">${t.proker}</span></td>
@@ -751,38 +738,36 @@
                 `;
             });
 
-            tfoot.innerHTML = `
+            document.getElementById('af-table-body').innerHTML = tbodyHTML;
+            document.getElementById('af-table-foot').innerHTML = `
                 <tr>
                     <td colspan="3" class="p-4 text-right uppercase tracking-wider text-xs">Total Transaksi Bulan Ini:</td>
                     <td class="p-4 text-right text-emerald-600 text-base">${formatRp(totalIn)}</td>
                     <td class="p-4 text-right text-rose-600 text-base">${formatRp(totalOut)}</td>
                 </tr>
             `;
-
-            lucide.createIcons();
         }
 
         function renderRiwayat() {
-            const tbody = document.getElementById('history-table-body');
-            tbody.innerHTML = '';
+            let tbodyHTML = '';
 
             const visibleTransactions = currentUser === 'GLOBAL' 
                 ? transactions 
                 : transactions.filter(t => t.proker === currentUser);
 
             if (visibleTransactions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 font-medium">Belum ada data transaksi yang dicatat.</td></tr>`;
+                document.getElementById('history-table-body').innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 font-medium">Belum ada data transaksi yang dicatat.</td></tr>`;
                 return;
             }
 
-            // Urutkan dari yang terbaru (berdasarkan createdAt atau date)
             const sortedTx = [...visibleTransactions].sort((a,b) => b.createdAt - a.createdAt);
 
+            // String Building Cepat Anti-Lag
             sortedTx.forEach(t => {
                 const isPemasukan = t.type === 'pemasukan';
                 const tagCategory = t.category !== 'UMUM' ? `<span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] uppercase font-black mr-2">${t.category}</span>` : '';
                 
-                tbody.innerHTML += `
+                tbodyHTML += `
                     <tr class="hover:bg-slate-50/80 transition-colors group">
                         <td class="p-4 text-sm font-medium text-slate-500">${t.date}</td>
                         <td class="p-4">
@@ -810,7 +795,8 @@
                     </tr>
                 `;
             });
-            lucide.createIcons();
+            
+            document.getElementById('history-table-body').innerHTML = tbodyHTML;
         }
 
         document.getElementById('input-date').valueAsDate = new Date();
@@ -880,7 +866,7 @@
                     if (error) throw error;
 
                     alert("✅ Data berhasil dihapus dari server!");
-                    fetchDatabase(); // reload data
+                    fetchDatabase(); // reload data otomatis
                 } catch(err) {
                     console.error("Gagal Hapus:", err);
                     alert("❌ Gagal menghapus! Pastikan kamu ada koneksi internet.");
@@ -889,7 +875,7 @@
         }
 
         // =========================================================================
-        // EKSEKUSI SIMPAN LANGSUNG KE SUPABASE (TANPA BLOKIR!)
+        // EKSEKUSI SIMPAN - WAJIB TERHUBUNG SERVER & PAKE TIMEOUT
         // =========================================================================
         document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -909,39 +895,35 @@
                 category: categoryVal,
                 type: document.getElementById('input-type').value,
                 nominal: cleanNominal, 
-                description: document.getElementById('input-desc').value, // Supabase map
-                created_at: Date.now() // Supabase map
+                description: document.getElementById('input-desc').value, 
+                created_at: Date.now() 
             };
 
             const submitBtn = document.getElementById('btn-submit');
             
-            // Kunci tombol biar gak di-klik berkali-kali
+            // Animasi Loading Tombol
             submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> MENGIRIM KE SERVER...';
             submitBtn.disabled = true;
             lucide.createIcons();
 
             try {
-                // Proses penyimpanan menggunakan Supabase (Tahan Banting)
-                let resError;
-                
-                if (editingDbId) {
-                    // Update
-                    const { error } = await supabase
-                        .from('transactions')
-                        .update(txData)
-                        .eq('id', editingDbId);
-                    resError = error;
-                } else {
-                    // Insert Baru
-                    const { error } = await supabase
-                        .from('transactions')
-                        .insert([txData]);
-                    resError = error;
-                }
+                // Buat Janji/Misi Mengirim ke Supabase
+                const saveMission = editingDbId 
+                    ? supabase.from('transactions').update(txData).eq('id', editingDbId)
+                    : supabase.from('transactions').insert([txData]);
 
-                if (resError) throw resError;
+                // Buat Timer Kematian (12 detik). Kalau internet nyangkut, paksa gagal!
+                const timeoutMission = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("TIMEOUT")), 12000)
+                );
+
+                // Jalankan Balapan (Mana yang duluan selesai)
+                const result = await Promise.race([saveMission, timeoutMission]);
+
+                if (result && result.error) throw result.error;
                 
-                alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Supabase dan bisa langsung dilihat oleh PJ lain.");
+                // KALAU SAMPAI SINI BERARTI 1 JUTA PERSEN DATANYA SUDAH MASUK GOOGLE
+                alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Supabase dan otomatis tersinkronisasi ke seluruh PJ.");
                 
                 // Bersihkan layar input
                 document.getElementById('input-nominal').value = '';
@@ -949,15 +931,19 @@
                 document.getElementById('input-date').valueAsDate = new Date();
                 editingDbId = null;
                 
-                // Refresh data & pindah ke tabel
+                // Panggil ulang data dan Lempar ke tab Riwayat
                 await fetchDatabase(); 
                 window.switchTab('riwayat');
 
             } catch (error) {
                 console.error("Supabase Save Error:", error);
-                alert("❌ KONEKSI GAGAL!\n\nPastikan kamu sudah memasukkan URL dan KEY Supabase di dalam kodenya, dan pastikan internetmu menyala.");
+                if (error.message === "TIMEOUT") {
+                    alert("❌ KONEKSI INTERNETMU TERLALU LAMBAT / TERPUTUS!\n\nProses dihentikan paksa. Data kamu belum terkirim. Silakan perbaiki WiFi lalu coba lagi.");
+                } else {
+                    alert("❌ KONEKSI GAGAL ATAU DIBLOKIR!\n\nPastikan koneksi internet menyala.");
+                }
             } finally {
-                // Kembalikan tombol agar bisa dicoba lagi
+                // Kembalikan tombol seperti semula agar bisa ditekan lagi
                 submitBtn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER';
                 submitBtn.disabled = false;
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
