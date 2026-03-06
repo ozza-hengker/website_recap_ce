@@ -4,12 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Keuangan CE 2026</title>
+    
+    <!-- SCRIPT PENGHANCUR CACHE CHROME (Memaksa web memuat kode paling baru) -->
+    <script>
+        if (!window.location.search.includes('v=bebas_blokir_100')) {
+            window.location.replace(window.location.pathname + '?v=bebas_blokir_100' + window.location.hash);
+        }
+    </script>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js CDN untuk Grafik -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js CDN (Pindah ke Cloudflare agar anti-blokir) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
     <style>
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -91,7 +100,7 @@
                                 <i data-lucide="user" class="w-3 h-3"></i> <span id="user-role-text">Global</span>
                             </span>
                             <span id="db-status" class="bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm">
-                                <i data-lucide="database" class="w-3 h-3"></i> Supabase v3
+                                <i data-lucide="database" class="w-3 h-3"></i> Supabase Aktif
                             </span>
                         </div>
                     </div>
@@ -335,15 +344,14 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (RAW REST API SUPABASE - 100% TEMBUS BLOCKER) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (100% PURE VANILLA JS - NO EXTERNAL SUPABASE LIBRARY) -->
     <script>
         // ===================================================================================
-        // KONFIGURASI SUPABASE MURNI (JALUR BAWAH TANAH)
+        // KONFIGURASI SUPABASE MURNI (JALUR BAWAH TANAH ANTI BLOKIR)
         // ===================================================================================
         const SUPABASE_URL = 'https://yhkzwbsckswgnqtmsabr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inloa3p3YnNja3N3Z25xdG1zYWJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NzU5ODcsImV4cCI6MjA4ODM1MTk4N30.Xp5ywrJYon0_NsgiKr_SfSpXlOWh1Ml4AuIJrCkQhY4';
 
-        // Headers sakti untuk nembus server
         const reqHeaders = {
             'apikey': SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -355,7 +363,6 @@
         let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
         let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
         let syncInterval = null; 
-        let isFirstLoad = true;
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -406,51 +413,41 @@
         setTimeout(() => lucide.createIcons(), 500);
 
         // =========================================================================
-        // MENGAMBIL DATA PAKAI FETCH (ANTI LAG & ANTI BLOCKER)
+        // MENGAMBIL DATA DENGAN VANILLA FETCH (ANTI NGE-STUCK)
         // =========================================================================
         window.fetchDatabase = async function() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '<i data-lucide="loader" class="w-4 h-4 text-teal-600 animate-spin"></i> Loading...';
 
-                // Tembak REST API Supabase langsung
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/transactions?select=*&order=created_at.desc`, {
                     method: 'GET',
                     headers: reqHeaders
                 });
 
                 if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.message || 'Gagal terhubung');
+                    const errText = await response.text();
+                    throw new Error(errText);
                 }
                 
                 const data = await response.json();
                 
-                const fetchedTxs = data.map(t => ({
+                transactions = data.map(t => ({
                     dbId: t.id,
                     date: t.date,
                     proker: t.proker,
                     category: t.category,
                     type: t.type,
-                    nominal: t.nominal,
+                    nominal: parseInt(t.nominal),
                     desc: t.description,
-                    createdAt: t.created_at
+                    createdAt: parseInt(t.created_at)
                 }));
 
-                const newDataString = JSON.stringify(fetchedTxs);
-                const oldDataString = JSON.stringify(transactions);
+                if (currentUser) updateUI();
 
-                // Update UI jika ada data baru, atau jika baru buka
-                if (newDataString !== oldDataString || isFirstLoad) {
-                    transactions = fetchedTxs;
-                    if (currentUser) updateUI();
-                    isFirstLoad = false;
-                }
-
-                // Ubah status jadi online
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '<i data-lucide="database" class="w-3 h-3"></i> Supabase v3';
+                    dbStatusEl.innerHTML = '<i data-lucide="database" class="w-3 h-3"></i> Tembus Server';
                     dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
                 }
 
@@ -902,7 +899,7 @@
         }
 
         // =========================================================================
-        // EKSEKUSI SIMPAN - JALUR BAWAH TANAH API (ANTI BLOCK)
+        // EKSEKUSI SIMPAN - 100% VANILLA API FETCH
         // =========================================================================
         document.getElementById('transaction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -946,11 +943,11 @@
                 });
 
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.message || 'Gagal Autentikasi');
+                    const errText = await response.text();
+                    throw new Error(errText);
                 }
                 
-                alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Supabase dan otomatis tersinkronisasi ke seluruh PJ.");
+                alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Server dan otomatis tersinkronisasi ke seluruh PJ.");
                 
                 document.getElementById('input-nominal').value = '';
                 document.getElementById('input-desc').value = '';
@@ -962,7 +959,7 @@
 
             } catch (error) {
                 console.error("Supabase Save Error:", error);
-                alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan Server: ${error.message}`);
+                alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan Server: ${error.message}\n\nPastikan koneksi internet kamu menyala dengan baik.`);
             } finally {
                 submitBtn.innerHTML = '<i data-lucide="upload-cloud" class="w-5 h-5"></i> SIMPAN KE SERVER';
                 submitBtn.disabled = false;
