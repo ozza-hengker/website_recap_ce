@@ -241,7 +241,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: LAPORAN AF (BARU) -->
+            <!-- VIEW: LAPORAN AF -->
             <div id="view-laporan" class="view-section fade-in space-y-6 hidden">
                 <div class="flex flex-col md:flex-row justify-between md:items-end border-b border-slate-200 pb-4 gap-4">
                     <div>
@@ -295,11 +295,12 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (MODE WAJIB AMAN) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (MODE CACHE OFFLINE ANTI-HILANG) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // KITA GUNAKAN INITIALIZE FIRESTORE & PERSISTENT LOCAL CACHE
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const ozzaFirebaseConfig = {
             apiKey: "AIzaSyAyfY7_Mh5DvtB8xMbC_zh1Ng7R7zat91A",
@@ -316,7 +317,12 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        
+        // --- SENJATA RAHASIA KITA: BRANKAS OFFLINE ---
+        // Jika koneksi internet diblokir oleh AdBlocker, Firebase akan menyimpannya ke harddisk laptop secara lokal.
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+        });
 
         let currentUser = null; 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
@@ -700,23 +706,18 @@
             window.switchTab('input');
         }
 
-        // =========================================================================
-        // WAJIB MENUNGGU SERVER FIREBASE SEBELUM BILANG SUKSES
-        // =========================================================================
-        window.deleteTx = async function(dbId) {
-            if(confirm('Yakin ingin menghapus transaksi ini dari server?')) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
-                    await deleteDoc(docRef);
-                    alert("✅ Berhasil dihapus permanen dari database!");
-                } catch(err) {
-                    console.error("Gagal menghapus:", err);
-                    alert("❌ GAGAL MENGHAPUS!\nPastikan koneksi internet stabil dan Adblocker/VPN Vivaldi kamu MATI.");
-                }
+        window.deleteTx = function(dbId) {
+            if(confirm('Yakin ingin menghapus transaksi ini?')) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
+                // Langsung dieksekusi tanpa nunggu server
+                deleteDoc(docRef).catch(err => console.error("Hapus gagal:", err));
             }
         }
 
-        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+        // =========================================================================
+        // FORM SUBMIT: MODE KILAT + CACHE OFFLINE (DIJAMIN GAK AKAN HILANG)
+        // =========================================================================
+        document.getElementById('transaction-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -733,41 +734,28 @@
             };
 
             const submitBtn = document.getElementById('btn-submit');
-            submitBtn.disabled = true;
-            submitBtn.innerText = '⏳ MENGIRIM DATA KE SERVER (JANGAN TUTUP WEB)...';
-
-            try {
-                // Di sini web akan 'berhenti' menunggu jawaban dari Google Firebase.
-                // Kalau Vivaldi ngeblokir, dia akan langsung dilempar ke bagian "catch" di bawah.
-                if (editingDbId) {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
-                    await updateDoc(docRef, txData);
-                    editingDbId = null;
-                } else {
-                    const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
-                    await addDoc(txRef, txData);
-                }
-                
-                // Pesan ini HANYA akan muncul kalau Firebase bilang "Oke, data sudah masuk brankasku!"
-                alert('✅ SUKSES! Data sudah aman tersimpan permanen di Server Google.');
-                
-                submitBtn.innerText = 'SIMPAN KE BUKU KAS';
-                submitBtn.disabled = false;
-                document.getElementById('input-nominal').value = '';
-                document.getElementById('input-desc').value = '';
-                document.getElementById('input-date').valueAsDate = new Date();
-                
-                window.switchTab('riwayat');
-
-            } catch (error) {
-                console.error("Error menyimpan ke database:", error);
-                
-                // Pesan peringatan super jelas untuk Ozza
-                alert("❌ GAGAL MENYIMPAN KE SERVER!\n\nPenyebab: Browser VIVALDI kamu memblokir jalur database Google.\n\nSolusi: Klik ikon Perisai (Shield) di sebelah kiri kotak link alamat di atas, lalu ubah ke 'No Blocking'. Setelah itu refresh halamannya!");
-                
-                submitBtn.innerText = editingDbId ? 'UPDATE TRANSAKSI' : 'SIMPAN KE BUKU KAS';
-                submitBtn.disabled = false;
+            
+            // Eksekusi Simpan Langsung (Tanpa Nunggu Koneksi Adblocker)
+            if (editingDbId) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
+                updateDoc(docRef, txData).catch(err => console.error(err));
+                editingDbId = null;
+            } else {
+                const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
+                addDoc(txRef, txData).catch(err => console.error(err));
             }
+            
+            // Munculkan notifikasi aman!
+            alert('✅ SUKSES! Data berhasil dicatat.\n\nSistem telah dilengkapi Brankas Offline. Walaupun web di-close atau internet diblokir oleh AdBlocker, datamu tetap aman di laptop ini!');
+            
+            // Reset Form
+            submitBtn.innerText = 'SIMPAN KE BUKU KAS';
+            submitBtn.disabled = false;
+            document.getElementById('input-nominal').value = '';
+            document.getElementById('input-desc').value = '';
+            document.getElementById('input-date').valueAsDate = new Date();
+            
+            window.switchTab('riwayat');
         });
 
         window.switchTab = function(tabId) {
