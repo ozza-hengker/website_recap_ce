@@ -340,14 +340,22 @@
         // KUNCI SUPABASE (URL & ANON KEY)
         // ===================================================================================
         const SUPABASE_URL = 'https://yhkzwbsckswgnqtmsabr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_AYrOHGCmmUujL30mGCenug_FcEbBOmM';
+        
+        // ⚠️ MASUKKAN KUNCI ANON PUBLIC DI SINI (YANG PANJANG BANGET DAN DIAWALI 'eyJ')
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inloa3p3YnNja3N3Z25xdG1zYWJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NzU5ODcsImV4cCI6MjA4ODM1MTk4N30.Xp5ywrJYon0_NsgiKr_SfSpXlOWh1Ml4AuIJrCkQhY4';
+
+        // Validasi Otomatis agar Ozza tidak pusing lagi
+        if (SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('eyJ')) {
+            alert("⚠️ PERINGATAN SISTEM: Kunci Supabase-mu SALAH! Kunci 'anon public' yang asli pasti diawali dengan teks 'eyJ'. Silakan cek kembali di Supabase > Settings > API.");
+        }
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- SISTEM ANTI LOGOUT (MEMORI BROWSER) ---
         let currentUser = localStorage.getItem('ce_logged_in_role') || null; 
         let activeTab = localStorage.getItem('ce_active_tab') || 'dashboard';
-        let syncInterval = null; // Penampung interval agar tidak dobel
+        let syncInterval = null; 
+        let isFirstLoad = true; // Penanda untuk mencegah blank dashboard
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -380,13 +388,17 @@
             return parseInt(val.replace(/[^0-9]/g, '')) || 0;
         }
 
-        // Init App & Langsung Masuk (Tanpa Loading Firebase Auth)
+        // Init App & Langsung Masuk (Anti-Logout)
         if (currentUser) {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-role-text').innerText = currentUser === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + currentUser;
+            
+            // PAKSA RENDER UI AGAR TIDAK BLANK SAAT PERTAMA KALI DIBUKA
+            updateUI(); 
+            
             setTimeout(() => window.switchTab(activeTab), 100);
-            startSync(); // Mulai penarikan data
+            startSync(); 
         }
 
         const today = new Date();
@@ -399,7 +411,7 @@
         // LOGIKA DATABASE MENGGUNAKAN SUPABASE DENGAN SMART SYNC
         // =========================================================================
         window.fetchDatabase = async function() {
-            if (SUPABASE_URL === 'ISI_DENGAN_URL_SUPABASE_MU') return; 
+            if (SUPABASE_ANON_KEY === 'PASTE_KUNCI_ANON_YANG_PANJANG_DIAWALI_eyJ_DISINI') return; 
 
             try {
                 // Ambil data dari Supabase
@@ -421,22 +433,38 @@
                     createdAt: t.created_at
                 }));
 
-                // Cek Perubahan Data: Hanya Update UI jika data benar-benar berubah (Anti Lag!)
                 const newDataString = JSON.stringify(fetchedTxs);
                 const oldDataString = JSON.stringify(transactions);
 
-                if (newDataString !== oldDataString) {
+                // Update UI HANYA jika data berubah ATAU saat baru pertama kali diload
+                if (newDataString !== oldDataString || isFirstLoad) {
                     transactions = fetchedTxs;
                     if (currentUser) updateUI();
+                    isFirstLoad = false;
                 }
+
+                // Ubah status jadi online
+                const dbStatusEl = document.getElementById('db-status');
+                if(dbStatusEl) {
+                    dbStatusEl.innerHTML = '<i data-lucide="database" class="w-3 h-3"></i> Supabase Aktif';
+                    dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
+                    lucide.createIcons();
+                }
+
                 return true;
             } catch (err) {
                 console.error("Fetch Supabase Gagal:", err);
+                // Ubah status jadi Error
+                const dbStatusEl = document.getElementById('db-status');
+                if(dbStatusEl) {
+                    dbStatusEl.innerHTML = '<i data-lucide="wifi-off" class="w-3 h-3"></i> API Error';
+                    dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
+                    lucide.createIcons();
+                }
                 return false;
             }
         };
 
-        // Fungsi Memulai Interval Tunggal
         function startSync() {
             fetchDatabase(); 
             if (!syncInterval) {
@@ -444,7 +472,6 @@
             }
         }
 
-        // Fungsi Menghentikan Interval
         function stopSync() {
             if (syncInterval) {
                 clearInterval(syncInterval);
@@ -454,6 +481,11 @@
 
         window.handleLogin = function(e) {
             e.preventDefault();
+
+            if (SUPABASE_ANON_KEY === 'PASTE_KUNCI_ANON_YANG_PANJANG_DIAWALI_eyJ_DISINI') {
+                alert("❌ KODE HTML BELUM SELESAI!\nKamu belum menempelkan (paste) API Key yang panjang di dalam kode HTML-nya.");
+                return;
+            }
 
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
@@ -477,6 +509,9 @@
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-role-text').innerText = role === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + role;
             
+            // Render UI langsung agar tidak blank!
+            updateUI();
+
             if(role === 'GLOBAL') {
                 document.getElementById('tab-dashboard').classList.remove('hidden');
                 document.getElementById('tab-laporan').classList.remove('hidden'); 
@@ -493,7 +528,7 @@
             }
 
             window.toggleSGEDropdown();
-            startSync(); // Mulai narik data
+            startSync(); 
             setTimeout(() => lucide.createIcons(), 50);
         }
 
@@ -922,7 +957,7 @@
 
                 if (result && result.error) throw result.error;
                 
-                // KALAU SAMPAI SINI BERARTI 1 JUTA PERSEN DATANYA SUDAH MASUK GOOGLE
+                // KALAU SAMPAI SINI BERARTI 1 JUTA PERSEN DATANYA SUDAH MASUK GOOGLE/SUPABASE
                 alert("✅ SUKSES TERSIMPAN!\n\nData kamu sudah masuk ke Supabase dan otomatis tersinkronisasi ke seluruh PJ.");
                 
                 // Bersihkan layar input
@@ -937,10 +972,12 @@
 
             } catch (error) {
                 console.error("Supabase Save Error:", error);
-                if (error.message === "TIMEOUT") {
-                    alert("❌ KONEKSI INTERNETMU TERLALU LAMBAT / TERPUTUS!\n\nProses dihentikan paksa. Data kamu belum terkirim. Silakan perbaiki WiFi lalu coba lagi.");
+                let pesanError = error.message || error.details || "Gagal Autentikasi";
+                
+                if (pesanError === "TIMEOUT") {
+                    alert("❌ KONEKSI TERPUTUS / LAMBAT!\n\nProses dihentikan paksa. Silakan perbaiki WiFi lalu coba lagi.");
                 } else {
-                    alert("❌ KONEKSI GAGAL ATAU DIBLOKIR!\n\nPastikan koneksi internet menyala.");
+                    alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nAlasan: ${pesanError}\n\nPastikan Anon Key Supabase-mu benar (diawali dengan 'eyJ').`);
                 }
             } finally {
                 // Kembalikan tombol seperti semula agar bisa ditekan lagi
