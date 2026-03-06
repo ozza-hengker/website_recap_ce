@@ -295,11 +295,10 @@
         </main>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT UTAMA (MODE CACHE OFFLINE ANTI-HILANG) -->
+    <!-- SCRIPT JAVASCRIPT UTAMA (MODE CACHE HYBRID ANTI-BADAI) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // KITA GUNAKAN INITIALIZE FIRESTORE & PERSISTENT LOCAL CACHE
         import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const ozzaFirebaseConfig = {
@@ -318,10 +317,10 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // --- SENJATA RAHASIA KITA: BRANKAS OFFLINE ---
-        // Jika koneksi internet diblokir oleh AdBlocker, Firebase akan menyimpannya ke harddisk laptop secara lokal.
+        // --- SENJATA RAHASIA 1: LONG POLLING UNTUK BYPASS WIFI KAMPUS ---
         const db = initializeFirestore(app, {
-            localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+            localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}),
+            experimentalForceLongPolling: true 
         });
 
         let currentUser = null; 
@@ -335,7 +334,9 @@
             'sge': { pass: 'sgeamin', role: 'SGE MARKET HUB' }
         };
 
-        let transactions = []; 
+        // --- SENJATA RAHASIA 2: BRANKAS MANUAL (Tahan Refresh & Ganti Akun) ---
+        // Jika browsermu memblokir memori utama Firebase, kita pakai memori cadangan browser ini.
+        let transactions = JSON.parse(localStorage.getItem('ce_offline_backup') || '[]');
         let editingDbId = null;  
 
         const formatRp = (angka) => {
@@ -366,10 +367,22 @@
                 const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
                 
                 onSnapshot(txRef, (snapshot) => {
-                    transactions = [];
+                    const serverTxs = [];
                     snapshot.forEach(doc => {
-                        transactions.push({ dbId: doc.id, ...doc.data() });
+                        serverTxs.push({ dbId: doc.id, ...doc.data() });
                     });
+
+                    // Gabungkan data dari Server Google dengan data "Nyangkut" di laptopmu
+                    const serverTimestamps = serverTxs.map(t => t.createdAt);
+                    const unsyncedTempTxs = transactions.filter(t => 
+                        t.dbId && t.dbId.toString().startsWith('temp_') && !serverTimestamps.includes(t.createdAt)
+                    );
+
+                    transactions = [...serverTxs, ...unsyncedTempTxs];
+                    
+                    // Simpan ulang ke Brankas Manual
+                    localStorage.setItem('ce_offline_backup', JSON.stringify(transactions));
+                    
                     if (currentUser) updateUI();
                 }, (error) => {
                     console.error("Error fetching data:", error);
@@ -634,11 +647,14 @@
                 const isPemasukan = t.type === 'pemasukan';
                 const tagCategory = t.category !== 'UMUM' ? `<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded mr-2">${t.category}</span>` : '';
                 
+                // Beri tanda jika data belum terupload ke server
+                const syncStatus = t.dbId.toString().startsWith('temp_') ? '<span class="text-xs text-rose-500 font-bold ml-2">(Belum Terupload)</span>' : '';
+                
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50">
                         <td class="p-4 text-sm text-slate-500">${t.date}</td>
                         <td class="p-4">
-                            <div class="font-bold text-slate-800 text-sm">${t.proker}</div>
+                            <div class="font-bold text-slate-800 text-sm">${t.proker} ${syncStatus}</div>
                             <div class="text-xs text-slate-500 mt-1">
                                 ${tagCategory} ${t.desc}
                             </div>
@@ -708,14 +724,21 @@
 
         window.deleteTx = function(dbId) {
             if(confirm('Yakin ingin menghapus transaksi ini?')) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
-                // Langsung dieksekusi tanpa nunggu server
-                deleteDoc(docRef).catch(err => console.error("Hapus gagal:", err));
+                // Langsung hapus dari UI dan Brankas Manual
+                transactions = transactions.filter(t => t.dbId !== dbId);
+                localStorage.setItem('ce_offline_backup', JSON.stringify(transactions));
+                updateUI();
+
+                // Hapus dari Server Google (kalau bukan data temp)
+                if (!dbId.toString().startsWith('temp_')) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', dbId);
+                    deleteDoc(docRef).catch(err => console.error("Hapus background gagal:", err));
+                }
             }
         }
 
         // =========================================================================
-        // FORM SUBMIT: MODE KILAT + CACHE OFFLINE (DIJAMIN GAK AKAN HILANG)
+        // FORM SUBMIT: MODE BRANKAS HYBRID (SUPER AMAN)
         // =========================================================================
         document.getElementById('transaction-form').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -735,20 +758,33 @@
 
             const submitBtn = document.getElementById('btn-submit');
             
-            // Eksekusi Simpan Langsung (Tanpa Nunggu Koneksi Adblocker)
+            // 1. Simpan Langsung ke Brankas Manual Browser (Anti-Hilang!)
+            const tempId = 'temp_' + Date.now();
+            const newTx = { dbId: editingDbId || tempId, ...txData };
+            
             if (editingDbId) {
+                const index = transactions.findIndex(t => t.dbId === editingDbId);
+                if(index > -1) transactions[index] = newTx;
+            } else {
+                transactions.push(newTx);
+            }
+            // Ini kuncinya: Memaksa browser menyimpan datamu detik ini juga!
+            localStorage.setItem('ce_offline_backup', JSON.stringify(transactions));
+
+            // 2. Eksekusi Kirim ke Server Google (Di Latar Belakang)
+            if (editingDbId && !editingDbId.toString().startsWith('temp_')) {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingDbId);
                 updateDoc(docRef, txData).catch(err => console.error(err));
-                editingDbId = null;
             } else {
                 const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
                 addDoc(txRef, txData).catch(err => console.error(err));
             }
             
-            // Munculkan notifikasi aman!
-            alert('✅ SUKSES! Data berhasil dicatat.\n\nSistem telah dilengkapi Brankas Offline. Walaupun web di-close atau internet diblokir oleh AdBlocker, datamu tetap aman di laptop ini!');
+            editingDbId = null;
+
+            // 3. Notifikasi dan Reset
+            alert('✅ DATA BERHASIL DICATAT!\n\nData kamu sudah masuk ke Brankas Local. Sekarang kamu BEBAS menutup tab, merefresh, atau ganti akun. Data dijamin TIDAK AKAN HILANG!');
             
-            // Reset Form
             submitBtn.innerText = 'SIMPAN KE BUKU KAS';
             submitBtn.disabled = false;
             document.getElementById('input-nominal').value = '';
