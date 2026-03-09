@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=fix_logo_pdhbem_100';
+        const currentVersion = 'v=tambah_modal_restock_100';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -228,13 +228,9 @@
                         </div>
 
                         <div id="sge-category-container" class="bg-cyan-50/50 p-5 rounded-2xl border border-cyan-200 hidden">
-                            <label class="block text-xs font-bold text-cyan-800 uppercase tracking-wider mb-2">📦 Produk SGE Terjual</label>
+                            <label id="label-category" class="block text-xs font-bold text-cyan-800 uppercase tracking-wider mb-2">📦 Kategori Transaksi</label>
                             <select id="input-category" class="w-full p-3.5 bg-white border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 outline-none font-bold text-cyan-700 cursor-pointer shadow-sm">
-                                <option value="ICE CREAM">ICE CREAM</option>
-                                <option value="MINUMAN">MINUMAN</option>
-                                <option value="POP MIE">POP MIE</option>
-                                <option value="PDH KKN">PDH KKN</option>
-                                <option value="LAINNYA">LAINNYA</option>
+                                <option value="UMUM">UMUM</option>
                             </select>
                         </div>
 
@@ -854,7 +850,9 @@
 
             // Kalkulasi PDH BEM Khusus Admin
             const pdhOmset = pdhBemSold * 240000;
-            const pdhShare = pdhOmset * 0.5;
+            const pdhModal = pdhBemSold * 220000; // Dikurangi harga beli per pcs
+            const pdhNet = pdhOmset - pdhModal;   // Laba Bersih
+            const pdhShare = pdhNet * 0.5;        // Bagi hasil 50:50 dari Laba Bersih
 
             document.getElementById('af-summary-cards').innerHTML = `
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
@@ -933,18 +931,23 @@
                             </div>
                             <p class="text-xs text-slate-400 mt-3">Data otomatis tersimpan saat angka diubah.</p>
                         </div>
-                        <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-3">
-                            <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                                <span class="text-xs font-bold text-slate-400 uppercase">Total Omset</span>
-                                <span class="font-bold text-slate-700">${formatRp(pdhOmset)}</span>
+                        <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2">
+                            <div class="flex justify-between text-xs font-medium text-slate-500">
+                                <span>Pemasukan (Jual 240k)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
                             </div>
-                            <div class="flex justify-between items-center pt-1">
+                            <div class="flex justify-between text-xs font-medium text-slate-500 pb-2 border-b border-slate-100">
+                                <span>Modal (Beli 220k)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
+                                <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-2">
                                 <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
                                 <span class="font-bold text-slate-700">${formatRp(pdhShare)}</span>
                             </div>
                             <div class="flex justify-between items-center pt-1">
-                                <span class="text-sm font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
-                                <span class="font-black text-indigo-600 text-2xl">${formatRp(pdhShare)}</span>
+                                <span class="text-xs font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
+                                <span class="font-black text-indigo-600 text-xl">${formatRp(pdhShare)}</span>
                             </div>
                         </div>
                     </div>
@@ -1048,14 +1051,36 @@
         document.getElementById('input-date').valueAsDate = new Date();
 
         window.toggleSGEDropdown = function() {
-            const proker = currentUser === 'SGE MARKET HUB' ? 'SGE MARKET HUB' : document.getElementById('input-proker').value;
-            const sgeContainer = document.getElementById('sge-category-container');
+            const proker = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
+            const container = document.getElementById('sge-category-container');
+            const categorySelect = document.getElementById('input-category');
+            const categoryLabel = document.getElementById('label-category');
+
             if(proker === 'SGE MARKET HUB') {
-                sgeContainer.classList.remove('hidden');
-                sgeContainer.classList.add('block');
+                container.classList.remove('hidden');
+                container.classList.add('block');
+                categoryLabel.innerText = '📦 Kategori SGE';
+                categorySelect.innerHTML = `
+                    <option value="ICE CREAM">ICE CREAM</option>
+                    <option value="MINUMAN">MINUMAN</option>
+                    <option value="POP MIE">POP MIE</option>
+                    <option value="PDH KKN">PDH KKN</option>
+                    <option value="RESTOCK / MODAL">RESTOCK / MODAL</option>
+                    <option value="LAINNYA">LAINNYA</option>
+                `;
+            } else if (proker === 'FILKOMMERCH') {
+                container.classList.remove('hidden');
+                container.classList.add('block');
+                categoryLabel.innerText = '🛍️ Kategori Merch';
+                categorySelect.innerHTML = `
+                    <option value="PENJUALAN BARANG">PENJUALAN BARANG</option>
+                    <option value="RESTOCK / MODAL">RESTOCK / MODAL</option>
+                    <option value="LAINNYA">LAINNYA</option>
+                `;
             } else {
-                sgeContainer.classList.add('hidden');
-                sgeContainer.classList.remove('block');
+                container.classList.add('hidden');
+                container.classList.remove('block');
+                categorySelect.innerHTML = '<option value="UMUM">UMUM</option>';
             }
         }
 
@@ -1082,7 +1107,9 @@
             if(currentUser === 'GLOBAL') document.getElementById('input-proker').value = tx.proker;
             
             window.toggleSGEDropdown();
-            if (tx.proker === 'SGE MARKET HUB') document.getElementById('input-category').value = tx.category;
+            if (tx.proker === 'SGE MARKET HUB' || tx.proker === 'FILKOMMERCH') {
+                document.getElementById('input-category').value = tx.category;
+            }
             
             window.setTxType(tx.type);
             
@@ -1118,7 +1145,11 @@
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
-            const categoryVal = prokerVal === 'SGE MARKET HUB' ? document.getElementById('input-category').value : 'UMUM';
+            
+            let categoryVal = 'UMUM';
+            if (prokerVal === 'SGE MARKET HUB' || prokerVal === 'FILKOMMERCH') {
+                categoryVal = document.getElementById('input-category').value;
+            }
 
             const cleanNominal = getCleanNominal();
             if(cleanNominal === 0) {
