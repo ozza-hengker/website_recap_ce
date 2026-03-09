@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=sge_stok_rugi_104';
+        const currentVersion = 'v=sge_stok_detail_105';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -29,6 +29,11 @@
         /* Tabel Sticky agar nama tidak hilang saat di-scroll ke kanan di HP */
         .sticky-col { position: sticky; left: 0; background-color: white; z-index: 10; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         .sticky-col-header { position: sticky; left: 0; background-color: #f8fafc; z-index: 11; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
+        
+        /* Custom Scrollbar untuk Box Stok SGE */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         
         @media print {
             body { background-color: white !important; }
@@ -140,7 +145,7 @@
                 <button onclick="switchTab('kasce')" id="tab-kasce" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="wallet" class="w-5 h-5"></i> Uang Kas CE
                 </button>
-                <!-- MENU BARU: STOK & RUGI SGE (Hanya untuk Admin dan SGE) -->
+                <!-- MENU BARU: STOK & RUGI SGE -->
                 <button onclick="switchTab('stoksge')" id="tab-stoksge" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="package" class="w-5 h-5"></i> Stok & Rugi SGE
                 </button>
@@ -424,7 +429,7 @@
                         <div class="bg-purple-100 p-3 rounded-xl hidden md:block border border-purple-200"><i data-lucide="package" class="w-8 h-8 text-purple-700"></i></div>
                         <div>
                             <h2 class="text-3xl font-black text-slate-800">Stok & Kerugian SGE</h2>
-                            <p class="text-slate-500 font-medium">Pantau sisa barang dan catat kerugian akibat barang hilang/tidak dibayar.</p>
+                            <p class="text-slate-500 font-medium">Pantau sisa barang dan catat kerugian akibat barang hilang/tidak dibayar secara spesifik.</p>
                         </div>
                     </div>
                     <div class="bg-rose-50 px-6 py-3 rounded-2xl border border-rose-200 text-right shadow-sm">
@@ -433,77 +438,73 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- BAGIAN STOK -->
-                    <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <!-- BAGIAN STOK SPESIFIK -->
+                    <div class="xl:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-3">
-                            <i data-lucide="boxes" class="text-purple-600 w-5 h-5"></i> Update Sisa Stok
+                            <i data-lucide="boxes" class="text-purple-600 w-5 h-5"></i> Update Sisa Stok Produk
                         </h3>
-                        <div class="space-y-4" id="sge-stock-container">
-                            <!-- Rendered by JS -->
+                        <div id="sge-stock-container">
+                            <!-- Rendered by JS secara spesifik dan di-scroll -->
                         </div>
-                        <p class="text-xs text-slate-400 mt-4 text-center">Data stok tersimpan otomatis</p>
+                        <p class="text-xs text-slate-400 mt-4 text-center">Data stok tersimpan otomatis saat angka diubah</p>
                     </div>
 
                     <!-- BAGIAN INPUT RUGI -->
-                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="font-bold text-rose-700 mb-4 flex items-center gap-2 border-b border-rose-100 pb-3">
-                            <i data-lucide="alert-triangle" class="w-5 h-5"></i> Catat Barang Hilang / Belum Dibayar
-                        </h3>
-                        <form id="sge-loss-form" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Kejadian</label>
-                                    <input type="date" id="loss-date" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
+                    <div class="xl:col-span-1 space-y-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="font-bold text-rose-700 mb-4 flex items-center gap-2 border-b border-rose-100 pb-3">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i> Catat Barang Hilang / Nunggak
+                            </h3>
+                            <form id="sge-loss-form" class="space-y-4">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Kejadian</label>
+                                        <input type="date" id="loss-date" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Barang yang Hilang</label>
+                                        <select id="loss-item" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 cursor-pointer">
+                                            <!-- Rendered by JS -->
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Barang</label>
-                                    <select id="loss-item" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 cursor-pointer">
-                                        <option value="ICE CREAM">ICE CREAM</option>
-                                        <option value="MINUMAN">MINUMAN</option>
-                                        <option value="POP MIE">POP MIE</option>
-                                        <option value="PDH KKN">PDH KKN</option>
-                                        <option value="LAINNYA">LAINNYA</option>
-                                    </select>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nominal Rugi / Belum Dibayar (Rp)</label>
+                                        <input type="text" inputmode="numeric" id="loss-nominal" oninput="formatRupiahInput(this)" required placeholder="Misal: 5000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold"/>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Keterangan Singkat</label>
+                                        <input type="text" id="loss-desc" required placeholder="Misal: Ilang 2 pcs di sekre" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nominal Rugi (Rp)</label>
-                                    <input type="text" inputmode="numeric" id="loss-nominal" oninput="formatRupiahInput(this)" required placeholder="Misal: 5000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold"/>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Keterangan / Pelaku</label>
-                                    <input type="text" id="loss-desc" required placeholder="Misal: Hilang di sekre 2 pcs" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
-                                </div>
-                            </div>
-                            <button type="submit" id="btn-submit-loss" class="w-full py-3 mt-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] text-sm">
-                                🚨 SIMPAN DATA KERUGIAN
-                            </button>
-                        </form>
-                    </div>
-                </div>
+                                <button type="submit" id="btn-submit-loss" class="w-full py-3 mt-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] text-sm">
+                                    🚨 SIMPAN DATA KERUGIAN
+                                </button>
+                            </form>
+                        </div>
 
-                <!-- TABEL RIWAYAT KERUGIAN -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-5 bg-rose-50 border-b border-rose-100 flex justify-between items-center">
-                        <h3 class="font-bold text-rose-800 flex items-center gap-2">
-                            <i data-lucide="list-x" class="w-5 h-5 text-rose-600"></i> Riwayat Kerugian SGE
-                        </h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-white text-slate-500 text-xs border-b border-slate-200">
-                                    <th class="p-4 font-bold uppercase tracking-wider">Tanggal</th>
-                                    <th class="p-4 font-bold uppercase tracking-wider">Barang</th>
-                                    <th class="p-4 font-bold uppercase tracking-wider">Keterangan</th>
-                                    <th class="p-4 font-bold uppercase tracking-wider text-right">Nominal Rugi</th>
-                                    <th class="p-4 font-bold uppercase tracking-wider text-center w-20">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="loss-table-body" class="divide-y divide-slate-100 text-sm font-medium"></tbody>
-                        </table>
+                        <!-- TABEL RIWAYAT KERUGIAN -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-5 bg-rose-50 border-b border-rose-100 flex justify-between items-center">
+                                <h3 class="font-bold text-rose-800 flex items-center gap-2">
+                                    <i data-lucide="list-x" class="w-5 h-5 text-rose-600"></i> Riwayat Kerugian
+                                </h3>
+                            </div>
+                            <div class="overflow-x-auto max-h-80 custom-scrollbar">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-white text-slate-500 text-xs border-b border-slate-200 sticky top-0 z-10">
+                                            <th class="p-3 font-bold uppercase tracking-wider">Tgl & Brg</th>
+                                            <th class="p-3 font-bold uppercase tracking-wider text-right">Rugi</th>
+                                            <th class="p-3 font-bold uppercase tracking-wider text-center w-12">Hapus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="loss-table-body" class="divide-y divide-slate-100 text-sm font-medium"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -537,6 +538,37 @@
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
         
+        // DAFTAR PRODUK SGE SPESIFIK BERDASARKAN KATALOG 
+        const detailedSgeItems = {
+            "ICE CREAM": [
+                "3 IN 1 COLOR CUP", "BANANA CRISPY", "BERRY CHOCO MAX CONE", "BINGO (Chocolate Stick)", "BLUEBERY COOKIES", 
+                "BROWN SUGAR BOBA", "CEREAL MILK CRISPY", "CHOCO MALT", "CHOCO MEETS OATS", "CHOCO MELT CONE", 
+                "CHOCOLATE STRIKE", "CHOCOLATECRISPY", "CONE BINGO", "CONE STRAWBERY", "CORN WONDERLAND", 
+                "2 COLOURS STICK", "CRISPY BALL", "DOUBLE MIKI COCHOLATE", "TARO CRISPY", "FRUITY ROLL", 
+                "FRUIZZY BLUBERRY", "HISTERIA MATCHA", "GRAPE FRUIZZY", "HISTERIA", "VANILA WITH COOKIES CUP", 
+                "HISTERIA PEACH", "JERUK", "JUJU APPLE", "KOPI CRISPY", "LOLLI PINEAPPLE", "MACCHIATO COFFEE", 
+                "MANGOSLUSH", "MARKISA", "MAXCONE", "MIKI MIKI SUSU", "MILK MELON", "MOCHI BANANA", "MOCHI COKLAT", 
+                "MOCHI DURIAN", "MOCHI KLEPON", "MOCHI PEACH", "MOCHI VANILLA", "MOONG BEAN", "NANAS", 
+                "RIA RIA KACANG HIJAU", "SEMANGKA", "STRAW-CRISPY", "MOCHI MANGO", "DOUBLE CRISPY", 
+                "SUNDAE COKLAT CUP", "SUNDAE STRAW CUP", "SWEETCORN", "BALL COOKIES & CREAM", "MIKI MIKI CEREAL", 
+                "LEMON SWEET TEA", "CHOCOMALT CONE HIJAU", "VANILA BERRY CONE", "CONE JAGUNG", "GOYANG LIDAH MANGO", "CONE TARO"
+            ],
+            "MINUMAN": [
+                "Coca-Cola PET 250ml", "Sprite PET 250ml", "Fanta Strawberry PET 250ml", 
+                "Coca-Cola PET 390ml", "Sprite PET 390ml", "Fanta Strawberry PET 390ml", 
+                "Coca-Cola PET 1L", "Sprite PET 1L", "Fanta Strawberry PET 1L", 
+                "Coca-Cola Kaleng 250ml", "Sprite Kaleng 250ml", "Fanta Kaleng 250ml", 
+                "Coca-Cola Kaleng 330ml", "Sprite Kaleng 330ml", "Fanta Kaleng 330ml", 
+                "Schweppes Kaleng 250ml", "Fanta Soda Water 250ml", 
+                "Frestea Apel 350ml", "Frestea Melati 350ml", "Frestea Markisa 350ml", "Frestea Green Honey 350ml", "Frestea Blackcurrant 350ml", 
+                "Frestea Apel 500ml", "Frestea Melati 500ml", "Frestea Markisa 500ml", "Frestea Green Honey 500ml", "Frestea Blackcurrant 500ml", 
+                "Minute Maid Pulpy Orange 300ml", "Minute Maid Pulpy Orange 1L", 
+                "Nutriboost Strawberry 300ml", "Nutriboost Orange 300ml", 
+                "Sprite Waterlymon 425ml", "Ades 600ml", "Ades 1.5L"
+            ],
+            "LAINNYA": ["POP MIE", "PDH KKN", "BARANG LAINNYA"]
+        };
+
         const userCredentials = {
             'admin': { pass: 'admince', role: 'GLOBAL' },
             'strategic': { pass: 'strategicyes', role: 'STRATEGIC PARTNERSHIP' },
@@ -544,18 +576,17 @@
             'sge': { pass: 'sgeamin', role: 'SGE MARKET HUB' }
         };
 
-        // Data Transaksi & PDH BEM 
         let transactions = []; 
         let editingDbId = null;  
         let pdhBemSold = 0;
 
-        // Data Kas CE
         const kasNames = ['Ozza', 'Azka', 'Alin', 'Niken', 'Michael', 'Samuel', 'Boyjes', 'Alya', 'Aliyah', 'Puty', 'Fairuz', 'Qila', 'Rafi', 'Zaki'];
         const kasMonths = ['Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         let kasData = {};
 
-        // Data SGE Stok & Kerugian
-        let sgeStock = { 'ICE CREAM': 0, 'MINUMAN': 0, 'POP MIE': 0, 'PDH KKN': 0, 'LAINNYA': 0 };
+        let sgeStock = {}; 
+        // Init semua barang jadi 0
+        Object.values(detailedSgeItems).flat().forEach(item => sgeStock[item] = 0);
         let sgeLosses = [];
 
         const formatRp = (angka) => {
@@ -581,21 +612,33 @@
         document.getElementById('report-month').value = currentMonthString;
         document.getElementById('input-date').valueAsDate = new Date();
         
-        // Inisialisasi tanggal form kerugian
         const lossDateEl = document.getElementById('loss-date');
         if(lossDateEl) lossDateEl.valueAsDate = new Date();
 
-        setTimeout(() => safeCreateIcons(), 500);
+        function populateLossDropdown() {
+            const select = document.getElementById('loss-item');
+            if(!select) return;
+            let html = '';
+            for(let cat in detailedSgeItems) {
+                html += `<optgroup label="${cat}">`;
+                detailedSgeItems[cat].forEach(item => {
+                    html += `<option value="${item}">${item}</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            select.innerHTML = html;
+        }
+
+        setTimeout(() => { safeCreateIcons(); populateLossDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI (AMBIL 5 DATA SEKALIGUS)
+        // FETCH DATA MURNI 
         // =========================================================================
         window.fetchDatabase = async function() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // Tembak 5 Endpoint secara bersamaan
                 const [resTx, resKas, resPdh, resSgeStock, resSgeLosses] = await Promise.all([
                     fetch(`${RTDB_URL}/transactions.json`),
                     fetch(`${RTDB_URL}/kas_ce.json`),
@@ -604,64 +647,46 @@
                     fetch(`${RTDB_URL}/sge_losses.json`)
                 ]);
                 
-                // 1. Parsing Data Transaksi
                 if (resTx.ok) {
                     const dataTx = await resTx.json();
                     let fetchedTxs = [];
                     if (dataTx) {
-                        for (let key in dataTx) {
-                            fetchedTxs.push({ dbId: key, ...dataTx[key] });
-                        }
+                        for (let key in dataTx) { fetchedTxs.push({ dbId: key, ...dataTx[key] }); }
                     }
                     const newHash = JSON.stringify(fetchedTxs);
-                    if (newHash !== currentDataHash) {
-                        transactions = fetchedTxs;
-                        currentDataHash = newHash;
-                    }
+                    if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
                 }
 
-                // 2. Parsing Data Kas Internal CE
                 if (resKas.ok) {
                     const dataKas = await resKas.json();
                     const newKasHash = JSON.stringify(dataKas);
-                    if (newKasHash !== currentKasHash) {
-                        kasData = dataKas || {};
-                        currentKasHash = newKasHash;
-                    }
+                    if (newKasHash !== currentKasHash) { kasData = dataKas || {}; currentKasHash = newKasHash; }
                 }
 
-                // 3. Parsing Data PDH BEM
                 if (resPdh.ok) {
                     const dataPdh = await resPdh.json();
-                    if(dataPdh && dataPdh.sold !== undefined) {
-                        pdhBemSold = dataPdh.sold;
-                    }
+                    if(dataPdh && dataPdh.sold !== undefined) pdhBemSold = dataPdh.sold;
                 }
 
-                // 4. Parsing Data Stok SGE
                 if (resSgeStock.ok) {
                     const dataStock = await resSgeStock.json();
                     const newStockHash = JSON.stringify(dataStock);
                     if (newStockHash !== currentSgeStockHash) {
-                        sgeStock = dataStock || { 'ICE CREAM': 0, 'MINUMAN': 0, 'POP MIE': 0, 'PDH KKN': 0, 'LAINNYA': 0 };
+                        if (dataStock) {
+                            Object.keys(dataStock).forEach(k => sgeStock[k] = dataStock[k]);
+                        }
                         currentSgeStockHash = newStockHash;
                     }
                 }
 
-                // 5. Parsing Data Kerugian SGE
                 if (resSgeLosses.ok) {
                     const dataLosses = await resSgeLosses.json();
                     let fetchedLosses = [];
                     if (dataLosses) {
-                        for (let key in dataLosses) {
-                            fetchedLosses.push({ dbId: key, ...dataLosses[key] });
-                        }
+                        for (let key in dataLosses) { fetchedLosses.push({ dbId: key, ...dataLosses[key] }); }
                     }
                     const newLossHash = JSON.stringify(fetchedLosses);
-                    if (newLossHash !== currentSgeLossesHash) {
-                        sgeLosses = fetchedLosses;
-                        currentSgeLossesHash = newLossHash;
-                    }
+                    if (newLossHash !== currentSgeLossesHash) { sgeLosses = fetchedLosses; currentSgeLossesHash = newLossHash; }
                 }
 
                 if (currentUser) updateUI();
@@ -693,15 +718,11 @@
         }
 
         function stopSync() {
-            if (syncInterval) {
-                clearInterval(syncInterval);
-                syncInterval = null;
-            }
+            if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
         }
 
         window.handleLogin = function(e) {
             e.preventDefault();
-
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
             const errorElement = document.getElementById('login-error');
@@ -718,7 +739,6 @@
 
         function login(role) {
             currentUser = role;
-
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('user-role-text').innerText = role === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + role;
@@ -766,7 +786,6 @@
         window.logout = function() {
             currentUser = null;
             stopSync(); 
-
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('login-error').classList.add('hidden');
@@ -776,7 +795,6 @@
 
         function updateUI() {
             if(!currentUser) return;
-            
             try { updateHeaderNetto(); } catch(e) {}
             if(currentUser === 'GLOBAL') {
                 try { renderDashboard(); } catch(e) {}
@@ -797,18 +815,18 @@
         }
 
         // =========================================================================
-        // FITUR BARU: STOK & KERUGIAN SGE
+        // FITUR STOK SPESIFIK & KERUGIAN SGE
         // =========================================================================
-        window.updateStockVal = async function(cat, val) {
+        window.updateStockVal = async function(itemName, val) {
             let num = parseInt(val) || 0;
             if (num < 0) num = 0;
             
-            sgeStock[cat] = num;
+            sgeStock[itemName] = num;
             try {
                 await fetch(`${RTDB_URL}/sge_stock.json`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [cat]: num })
+                    body: JSON.stringify({ [itemName]: num })
                 });
             } catch(e) {
                 console.error("Gagal update stok", e);
@@ -819,36 +837,48 @@
             let totalLoss = sgeLosses.reduce((sum, item) => sum + item.nominal, 0);
             document.getElementById('total-sge-rugi').innerText = formatRp(totalLoss);
 
-            // Render Kartu Input Stok
+            // Render Kartu Input Stok Spesifik
             let stockHTML = '';
-            sgeCategories.forEach(cat => {
-                let currentVal = sgeStock[cat] || 0;
+            for (const category in detailedSgeItems) {
                 stockHTML += `
-                    <div class="flex items-center justify-between bg-purple-50/50 p-3 rounded-xl border border-purple-100 hover:border-purple-300 transition-colors">
-                        <span class="text-sm font-bold text-slate-700">${cat}</span>
-                        <div class="flex items-center gap-2">
-                            <input type="number" min="0" value="${currentVal}" onchange="updateStockVal('${cat}', this.value)" class="w-20 p-2 text-center font-black text-purple-700 bg-white border border-purple-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all">
-                            <span class="text-xs text-slate-500 font-bold uppercase">Pcs</span>
-                        </div>
-                    </div>
+                    <div class="mb-5">
+                        <h4 class="font-bold text-slate-700 bg-slate-100 p-2 rounded-lg mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                            ${category === 'ICE CREAM' ? '🍦' : category === 'MINUMAN' ? '🥤' : '📦'} ${category}
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-2 custom-scrollbar border border-slate-100 p-2 rounded-xl bg-slate-50/50">
                 `;
-            });
+                
+                detailedSgeItems[category].forEach(item => {
+                    let currentVal = sgeStock[item] || 0;
+                    stockHTML += `
+                            <div class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 hover:border-purple-300 transition-colors shadow-sm">
+                                <span class="text-xs font-bold text-slate-600 truncate w-32 md:w-40" title="${item}">${item}</span>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" min="0" value="${currentVal}" onchange="updateStockVal('${item}', this.value)" class="w-16 p-1.5 text-center font-black text-purple-700 bg-purple-50 border border-purple-200 rounded-md outline-none focus:ring-2 focus:ring-purple-500 transition-all text-xs">
+                                </div>
+                            </div>
+                    `;
+                });
+                stockHTML += `</div></div>`;
+            }
             document.getElementById('sge-stock-container').innerHTML = stockHTML;
 
             // Render Tabel Kerugian
             let lossHTML = '';
             if (sgeLosses.length === 0) {
-                lossHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">Belum ada catatan kehilangan atau nunggak. Aman! 🎉</td></tr>`;
+                lossHTML = `<tr><td colspan="3" class="p-8 text-center text-slate-400 font-medium">Belum ada catatan kehilangan. Aman! 🎉</td></tr>`;
             } else {
                 const sortedLosses = [...sgeLosses].sort((a,b) => b.createdAt - a.createdAt);
                 sortedLosses.forEach(l => {
                     lossHTML += `
                         <tr class="hover:bg-rose-50/50 transition-colors">
-                            <td class="p-4 text-sm text-slate-500">${l.date}</td>
-                            <td class="p-4"><span class="bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">${l.item}</span></td>
-                            <td class="p-4 text-sm text-slate-700 font-medium">${l.desc}</td>
-                            <td class="p-4 text-right font-black text-rose-600">${formatRp(l.nominal)}</td>
-                            <td class="p-4 text-center">
+                            <td class="p-3">
+                                <div class="text-[10px] text-slate-400 font-bold uppercase">${l.date}</div>
+                                <div class="text-xs font-black text-rose-700">${l.item}</div>
+                                <div class="text-xs text-slate-600 italic">"${l.desc}"</div>
+                            </td>
+                            <td class="p-3 text-right font-black text-rose-600 text-sm align-middle">${formatRp(l.nominal)}</td>
+                            <td class="p-3 text-center align-middle">
                                 <button onclick="deleteSgeLoss('${l.dbId}')" class="p-2 bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 rounded-lg shadow-sm transition-all">
                                     🗑️
                                 </button>
@@ -865,10 +895,7 @@
             const nominalInput = document.getElementById('loss-nominal');
             const nominalVal = parseInt(nominalInput.value.replace(/[^0-9]/g, ''));
             
-            if(!nominalVal || nominalVal === 0) {
-                alert('Nominal kerugian harus diisi dengan benar!');
-                return;
-            }
+            if(!nominalVal || nominalVal === 0) { alert('Nominal kerugian harus diisi dengan benar!'); return; }
 
             const data = {
                 date: document.getElementById('loss-date').value,
@@ -910,9 +937,7 @@
                 try {
                     await fetch(`${RTDB_URL}/sge_losses/${dbId}.json`, { method: 'DELETE' });
                     fetchDatabase();
-                } catch(e) {
-                    alert('Gagal menghapus data.');
-                }
+                } catch(e) { alert('Gagal menghapus data.'); }
             }
         }
 
@@ -934,10 +959,7 @@
                     body: JSON.stringify({ sold: sold })
                 });
                 renderLaporanAF(); 
-            } catch(e) {
-                console.error(e);
-                alert("❌ Gagal menyimpan data PDH BEM. Cek internetmu!");
-            }
+            } catch(e) { console.error(e); alert("❌ Gagal menyimpan data PDH BEM. Cek internetmu!"); }
         }
 
         // =========================================================================
@@ -945,7 +967,6 @@
         // =========================================================================
         function renderKasTable() {
             let totalKasTerkumpul = 0;
-
             let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
             kasMonths.forEach(m => thead += `<th class="p-3 text-center text-xs font-black text-slate-500 uppercase tracking-wider w-32 min-w-[120px]">${m}</th>`);
             thead += `</tr>`;
@@ -1001,14 +1022,11 @@
                 });
 
                 if(!response.ok) throw new Error("Gagal Patch Kas");
-                
                 selectElement.classList.remove('animate-pulse');
                 
                 let total = 0;
                 for (const n in kasData) {
-                    for (const m in kasData[n]) {
-                        total += parseInt(kasData[n][m]);
-                    }
+                    for (const m in kasData[n]) { total += parseInt(kasData[n][m]); }
                 }
                 document.getElementById('total-kas-terkumpul').innerText = formatRp(total);
 
@@ -1019,7 +1037,6 @@
             }
         }
 
-
         // =========================================================================
         // DASHBOARD, LAPORAN, RIWAYAT
         // =========================================================================
@@ -1029,11 +1046,7 @@
         function renderDashboard() {
             let totalIn = 0, totalOut = 0;
             let cardsHTML = ''; 
-
-            const chartLabels = [];
-            const chartDataIn = [];
-            const chartDataOut = [];
-            const chartDataBalance = [];
+            const chartLabels = []; const chartDataIn = []; const chartDataOut = []; const chartDataBalance = [];
             const pieColors = ['#f59e0b', '#0d9488', '#06b6d4']; 
 
             prokers.forEach((proker) => {
@@ -1043,14 +1056,10 @@
                 const balance = inTotal - outTotal;
                 const isDefisit = balance < 0;
 
-                totalIn += inTotal;
-                totalOut += outTotal;
+                totalIn += inTotal; totalOut += outTotal;
 
                 let labelSingkat = proker === 'STRATEGIC PARTNERSHIP' ? 'STRATEGIC' : (proker === 'SGE MARKET HUB' ? 'SGE MARKET' : proker);
-                chartLabels.push(labelSingkat);
-                chartDataIn.push(inTotal);
-                chartDataOut.push(outTotal);
-                chartDataBalance.push(balance > 0 ? balance : 0); 
+                chartLabels.push(labelSingkat); chartDataIn.push(inTotal); chartDataOut.push(outTotal); chartDataBalance.push(balance > 0 ? balance : 0); 
 
                 cardsHTML += `
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-teal-300 transition-all relative overflow-hidden group">
@@ -1081,7 +1090,7 @@
             if(currentUser !== 'GLOBAL') return;
 
             if (typeof Chart === 'undefined') {
-                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold border border-dashed border-slate-300">Grafik tidak dapat ditampilkan (Jaringan memblokir file Chart.js). Namun fitur simpan dan tabel data 100% AMAN.</div>';
+                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold border border-dashed border-slate-300">Grafik tidak dapat ditampilkan. Fitur simpan dan tabel data 100% AMAN.</div>';
                 return;
             }
 
@@ -1116,9 +1125,7 @@
                         options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } }
                     });
                 }
-            } catch (error) {
-                console.error("Gagal merender grafik:", error);
-            }
+            } catch (error) { console.error("Gagal merender grafik:", error); }
         }
 
         window.renderLaporanAF = function() {
@@ -1132,7 +1139,6 @@
 
             const filteredTx = transactions.filter(t => t.date.startsWith(monthVal));
 
-            // SGE MARKET HUB
             const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
             const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -1140,7 +1146,6 @@
             const sgeAfShare = sgeNet > 0 ? sgeNet * 0.5 : 0;
             const sgeCeShare = sgeNet > 0 ? sgeNet * 0.5 : sgeNet; 
 
-            // STRATEGIC PARTNERSHIP
             const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
             const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -1148,7 +1153,6 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
-            // FILKOMMERCH 
             const merchTx = filteredTx.filter(t => t.proker === 'FILKOMMERCH');
             const merchIn = merchTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const merchOut = merchTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -1156,7 +1160,6 @@
             const merchAfShare = 0; 
             const merchCeShare = merchNet;
 
-            // PDH BEM 
             const pdhOmset = pdhBemSold * 240000;
             const pdhModal = pdhBemSold * 220000;
             const pdhNet = pdhOmset - pdhModal;
@@ -1192,7 +1195,6 @@
             `;
 
             document.getElementById('af-summary-cards').innerHTML = `
-                <!-- KARTU SGE -->
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
@@ -1222,7 +1224,6 @@
                     </div>
                 </div>
 
-                <!-- KARTU STRATEGIC -->
                 <div class="bg-gradient-to-br from-cyan-50 to-white rounded-3xl p-8 border border-cyan-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
@@ -1252,7 +1253,6 @@
                     </div>
                 </div>
 
-                <!-- KARTU FILKOMMERCH -->
                 <div class="bg-gradient-to-br from-pink-50 to-white rounded-3xl p-8 border border-pink-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shopping-bag" class="w-24 h-24 text-pink-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
@@ -1282,7 +1282,6 @@
                     </div>
                 </div>
 
-                <!-- KARTU KHUSUS PENJUALAN PDH BEM -->
                 <div class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-8 border border-indigo-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shirt" class="w-24 h-24 text-indigo-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
