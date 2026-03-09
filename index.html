@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=fitur_kas_internal_100';
+        const currentVersion = 'v=fix_logo_pdhbem_100';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -50,8 +50,9 @@
 
             <div class="mb-10 relative z-10">
                 <div class="flex justify-center items-center gap-4 mb-6">
-                    <img src="logo_bem.png" alt="Logo BEM" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
-                    <img src="logo_ce.jpg" alt="Logo CE" class="h-20 w-20 rounded-full object-cover shadow-lg border-4 border-white/80" onerror="this.style.display='none'">
+                    <!-- LOGO FIXED DENGAN EKSTENSI PNG DAN SPASI %20 -->
+                    <img src="logo%20bem.png" alt="Logo BEM" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
+                    <img src="LOGO%20CE.png" alt="Logo CE" class="h-20 w-20 rounded-full object-cover shadow-lg border-4 border-white/80" onerror="this.style.display='none'">
                 </div>
                 <h2 class="text-3xl font-black text-slate-800 tracking-tight">Portal Keuangan</h2>
                 <p class="text-teal-600 font-bold text-sm mt-2 tracking-widest uppercase">Creative Enterprise 2026</p>
@@ -95,8 +96,9 @@
             <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-4">
                     <div class="flex bg-white/10 p-2 rounded-xl items-center gap-3 shadow-inner border border-white/10">
-                        <img src="logo_bem.png" alt="BEM" class="h-10 object-contain drop-shadow-md" onerror="this.style.display='none'">
-                        <img src="logo_ce.jpg" alt="CE" class="h-10 w-10 rounded-full object-cover border-2 border-white/50 shadow-md" onerror="this.style.display='none'">
+                        <!-- LOGO FIXED DENGAN EKSTENSI PNG DAN SPASI %20 -->
+                        <img src="logo%20bem.png" alt="BEM" class="h-10 object-contain drop-shadow-md" onerror="this.style.display='none'">
+                        <img src="LOGO%20CE.png" alt="CE" class="h-10 w-10 rounded-full object-cover border-2 border-white/50 shadow-md" onerror="this.style.display='none'">
                     </div>
                     <div>
                         <h1 class="text-xl font-black tracking-tight drop-shadow-md">PORTAL KEUANGAN CE</h1>
@@ -137,7 +139,6 @@
                 <button onclick="switchTab('laporan')" id="tab-laporan" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="file-bar-chart" class="w-5 h-5"></i> Laporan AF
                 </button>
-                <!-- MENU BARU: UANG KAS CE (Hanya untuk Admin/Global) -->
                 <button onclick="switchTab('kasce')" id="tab-kasce" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="wallet" class="w-5 h-5"></i> Uang Kas CE
                 </button>
@@ -326,7 +327,11 @@
                         </button>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6" id="af-summary-cards"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6" id="af-summary-cards">
+                    <!-- Cards SGE dan Strategic akan dirender di sini lewat JS -->
+                </div>
+                
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-8">
                     <div class="p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                         <h3 class="font-bold text-slate-800 flex items-center gap-2">
@@ -352,7 +357,7 @@
                 </div>
             </div>
 
-            <!-- VIEW BARU: UANG KAS CE (KHUSUS ADMIN) -->
+            <!-- VIEW: UANG KAS CE (KHUSUS ADMIN) -->
             <div id="view-kasce" class="view-section fade-in space-y-6 hidden">
                 <div class="flex flex-col md:flex-row justify-between md:items-end border-b border-slate-200 pb-6 gap-4">
                     <div class="flex items-center gap-4">
@@ -420,9 +425,10 @@
             'sge': { pass: 'sgeamin', role: 'SGE MARKET HUB' }
         };
 
-        // Data Transaksi
+        // Data Transaksi & PDH BEM (Khusus Laporan AF)
         let transactions = []; 
         let editingDbId = null;  
+        let pdhBemSold = 0;
 
         // Data Kas CE
         const kasNames = ['Ozza', 'Azka', 'Alin', 'Niken', 'Michael', 'Samuel', 'Boyjes', 'Alya', 'Aliyah', 'Puty', 'Fairuz', 'Qila', 'Rafi', 'Zaki'];
@@ -454,17 +460,18 @@
         setTimeout(() => safeCreateIcons(), 500);
 
         // =========================================================================
-        // FETCH DATA MURNI (AMBIL TRANSAKSI DAN KAS SEKALIGUS)
+        // FETCH DATA MURNI (AMBIL TRANSAKSI, KAS, DAN PDH SEKALIGUS)
         // =========================================================================
         window.fetchDatabase = async function() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // Tembak 2 Endpoint secara bersamaan
-                const [resTx, resKas] = await Promise.all([
+                // Tembak 3 Endpoint secara bersamaan (Transaksi, Kas CE, dan PDH BEM)
+                const [resTx, resKas, resPdh] = await Promise.all([
                     fetch(`${RTDB_URL}/transactions.json`),
-                    fetch(`${RTDB_URL}/kas_ce.json`)
+                    fetch(`${RTDB_URL}/kas_ce.json`),
+                    fetch(`${RTDB_URL}/pdh_bem.json`)
                 ]);
                 
                 // 1. Parsing Data Transaksi
@@ -490,6 +497,14 @@
                     if (newKasHash !== currentKasHash) {
                         kasData = dataKas || {};
                         currentKasHash = newKasHash;
+                    }
+                }
+
+                // 3. Parsing Data PDH BEM (Khusus Admin Laporan AF)
+                if (resPdh.ok) {
+                    const dataPdh = await resPdh.json();
+                    if(dataPdh && dataPdh.sold !== undefined) {
+                        pdhBemSold = dataPdh.sold;
                     }
                 }
 
@@ -608,7 +623,31 @@
         }
 
         // =========================================================================
-        // FITUR BARU: RENDER TABEL UANG KAS CE
+        // AUTO-SAVE UPDATE PDH BEM (Khusus Laporan AF)
+        // =========================================================================
+        window.updatePdhBem = async function(val) {
+            let sold = parseInt(val) || 0;
+            if (sold < 0) sold = 0;
+            if (sold > 146) sold = 146; // Maksimal 146
+            
+            document.getElementById('input-pdh-sold').value = sold;
+            pdhBemSold = sold;
+
+            try {
+                await fetch(`${RTDB_URL}/pdh_bem.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sold: sold })
+                });
+                renderLaporanAF(); // Refresh UI langsung
+            } catch(e) {
+                console.error(e);
+                alert("❌ Gagal menyimpan data PDH BEM. Cek internetmu!");
+            }
+        }
+
+        // =========================================================================
+        // RENDER TABEL UANG KAS CE
         // =========================================================================
         function renderKasTable() {
             let totalKasTerkumpul = 0;
@@ -625,11 +664,9 @@
                 tbody += `<td class="p-3 font-black text-slate-700 sticky-col uppercase tracking-wide text-sm">${name}</td>`;
                 
                 kasMonths.forEach(month => {
-                    // Ambil nilai kas dari database. Default 0
                     const val = kasData[name]?.[month] || 0;
                     totalKasTerkumpul += parseInt(val);
 
-                    // Pewarnaan dinamis berdasarkan nominal
                     let colorClass = 'bg-rose-50 text-rose-600 border-rose-200';
                     if (val > 0 && val < 10000) colorClass = 'bg-amber-50 text-amber-700 border-amber-300';
                     if (val == 10000) colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-300';
@@ -654,23 +691,17 @@
             document.getElementById('total-kas-terkumpul').innerText = formatRp(totalKasTerkumpul);
         }
 
-        // =========================================================================
-        // FITUR BARU: AUTO-SAVE KAS CE KE DATABASE (Setiap kali Dropdown diubah)
-        // =========================================================================
         window.updateKas = async function(selectElement, name, month) {
             const val = parseInt(selectElement.value);
             
-            // Ubah warna dropdown langsung saat diklik biar UI terasa cepat (Optimistic UI)
             selectElement.className = "w-full py-2 px-1 text-[11px] font-black rounded-lg border outline-none cursor-pointer text-center appearance-none shadow-sm transition-colors animate-pulse " + 
                 (val == 0 ? 'bg-rose-50 text-rose-600 border-rose-200' : 
                 (val == 10000 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'));
 
-            // Simpan ke memory lokal sementara
             if (!kasData[name]) kasData[name] = {};
             kasData[name][month] = val;
 
             try {
-                // Tembak Patch khusus untuk nama tersebut ke Firebase
                 const response = await fetch(`${RTDB_URL}/kas_ce/${name}.json`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -679,10 +710,8 @@
 
                 if(!response.ok) throw new Error("Gagal Patch Kas");
                 
-                // Matikan animasi berkedip karena sukses
                 selectElement.classList.remove('animate-pulse');
                 
-                // Update total kas tanpa memuat ulang seluruh tabel
                 let total = 0;
                 for (const n in kasData) {
                     for (const m in kasData[n]) {
@@ -699,7 +728,7 @@
         }
 
 
-        // (Kode Render Dashboard, Laporan, Riwayat dll tetap sama dan aman di bawah sini)
+        // (Kode Render Dashboard, Laporan, Riwayat dll)
         let barChartObj = null;
         let pieChartObj = null;
 
@@ -758,7 +787,7 @@
             if(currentUser !== 'GLOBAL') return;
 
             if (typeof Chart === 'undefined') {
-                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold border border-dashed border-slate-300">Grafik tidak dapat ditampilkan.</div>';
+                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold border border-dashed border-slate-300">Grafik tidak dapat ditampilkan (Jaringan memblokir file Chart.js). Namun fitur simpan dan tabel data 100% AMAN.</div>';
                 return;
             }
 
@@ -766,7 +795,7 @@
                 if (barChartObj) {
                     barChartObj.data.datasets[0].data = chartDataIn;
                     barChartObj.data.datasets[1].data = chartDataOut;
-                    barChartObj.update(); 
+                    barChartObj.update('none'); 
                 } else {
                     const ctxBar = document.getElementById('barChart').getContext('2d');
                     barChartObj = new Chart(ctxBar, {
@@ -784,7 +813,7 @@
 
                 if (pieChartObj) {
                     pieChartObj.data.datasets[0].data = chartDataBalance;
-                    pieChartObj.update();
+                    pieChartObj.update('none');
                 } else {
                     const ctxPie = document.getElementById('pieChart').getContext('2d');
                     pieChartObj = new Chart(ctxPie, {
@@ -823,8 +852,13 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
+            // Kalkulasi PDH BEM Khusus Admin
+            const pdhOmset = pdhBemSold * 240000;
+            const pdhShare = pdhOmset * 0.5;
+
             document.getElementById('af-summary-cards').innerHTML = `
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-teal-900 text-xl">SGE MARKET HUB</h3>
                         <span class="bg-teal-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
@@ -853,6 +887,7 @@
                 </div>
 
                 <div class="bg-gradient-to-br from-cyan-50 to-white rounded-3xl p-8 border border-cyan-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-cyan-900 text-xl">STRATEGIC P.</h3>
                         <span class="bg-cyan-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 70:30</span>
@@ -879,6 +914,41 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- KARTU KHUSUS PENJUALAN PDH BEM -->
+                <div class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-8 border border-indigo-100 shadow-sm relative overflow-hidden md:col-span-2">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shirt" class="w-24 h-24 text-indigo-900"></i></div>
+                    <div class="flex items-center justify-between mb-6 relative z-10">
+                        <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
+                            PENJUALAN PDH BEM <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Khusus Admin</span>
+                        </h3>
+                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <div class="flex flex-col justify-center">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Total PDH Terjual (Max 146)</label>
+                            <div class="flex items-center gap-4">
+                                <input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" max="146" onchange="updatePdhBem(this.value)" class="w-24 p-3 bg-white border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-black text-xl text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">
+                                <span class="text-sm font-bold text-slate-500">x <span class="text-indigo-600 text-lg">Rp 240.000</span></span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-3">Data otomatis tersimpan saat angka diubah.</p>
+                        </div>
+                        <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-3">
+                            <div class="flex justify-between items-center border-b border-slate-50 pb-2">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Total Omset</span>
+                                <span class="font-bold text-slate-700">${formatRp(pdhOmset)}</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
+                                <span class="font-bold text-slate-700">${formatRp(pdhShare)}</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="text-sm font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
+                                <span class="font-black text-indigo-600 text-2xl">${formatRp(pdhShare)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
 
             let totalIn = 0;
@@ -890,6 +960,7 @@
             if (sortedMonthTx.length === 0) {
                 document.getElementById('af-table-body').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi di bulan ini.</td></tr>`;
                 document.getElementById('af-table-foot').innerHTML = '';
+                safeCreateIcons();
                 return;
             }
 
@@ -920,6 +991,8 @@
                     <td class="p-4 text-right text-rose-600 text-base">${formatRp(totalOut)}</td>
                 </tr>
             `;
+
+            safeCreateIcons(); // Reload ikon khusus kartu PDH BEM
         }
 
         function renderRiwayat() {
@@ -1031,7 +1104,7 @@
             if(confirm('Yakin ingin menghapus transaksi ini permanen dari server?')) {
                 try {
                     const response = await fetch(`${RTDB_URL}/transactions/${dbId}.json`, { method: 'DELETE' });
-                    if (!response.ok) throw new Error("Gagal hapus");
+                    if (!response.ok) throw new Error("Gagal hapus di sisi server");
                     
                     alert("✅ Data berhasil dihapus dari server!");
                     fetchDatabase(); 
@@ -1080,9 +1153,12 @@
                     body: JSON.stringify(txData)
                 });
 
-                if (!response.ok) throw new Error("Server Error");
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
                 
-                alert("✅ SUKSES TERSIMPAN!\nData sudah otomatis di-upload.");
+                alert("✅ SUKSES TERSIMPAN!\nData sudah otomatis di-upload dan bisa dilihat di HP staf lain.");
                 
                 document.getElementById('input-nominal').value = '';
                 document.getElementById('input-desc').value = '';
@@ -1094,7 +1170,7 @@
 
             } catch (error) {
                 console.error("Save Error:", error);
-                alert(`❌ KONEKSI GAGAL ATAU DITOLAK!\n\nProses dihentikan karena internet ngadat atau terblokir. Pastikan jaringan stabil lalu coba lagi.`);
+                alert(`❌ KONEKSI GAGAL ATAU DITOLAK SERVER!\n\nPesan Error: ${error.message}\n\nPastikan koneksi internet stabil.`);
             } finally {
                 submitBtn.innerHTML = '☁️ SIMPAN KE SERVER';
                 submitBtn.disabled = false;
