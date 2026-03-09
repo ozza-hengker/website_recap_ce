@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=sge_stok_detail_105';
+        const currentVersion = 'v=sge_inventory_ledger_106';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -31,7 +31,7 @@
         .sticky-col-header { position: sticky; left: 0; background-color: #f8fafc; z-index: 11; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         
         /* Custom Scrollbar untuk Box Stok SGE */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
         
@@ -145,9 +145,9 @@
                 <button onclick="switchTab('kasce')" id="tab-kasce" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="wallet" class="w-5 h-5"></i> Uang Kas CE
                 </button>
-                <!-- MENU BARU: STOK & RUGI SGE -->
+                <!-- MENU: STOK & RUGI SGE -->
                 <button onclick="switchTab('stoksge')" id="tab-stoksge" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
-                    <i data-lucide="package" class="w-5 h-5"></i> Stok & Rugi SGE
+                    <i data-lucide="boxes" class="w-5 h-5"></i> Stok & Rugi SGE
                 </button>
             </div>
         </nav>
@@ -213,8 +213,8 @@
                             <i data-lucide="plus-circle" class="text-teal-700 w-8 h-8"></i>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-black text-teal-900">Form Transaksi</h2>
-                            <p class="text-sm text-teal-700 mt-1 font-medium">Rekap pemasukan atau pengeluaran kas.</p>
+                            <h2 class="text-2xl font-black text-teal-900">Form Transaksi Uang</h2>
+                            <p class="text-sm text-teal-700 mt-1 font-medium">Rekap arus dana masuk atau keluar kas proker.</p>
                         </div>
                     </div>
                     
@@ -270,7 +270,7 @@
                         </div>
 
                         <button type="submit" id="btn-submit" class="w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500">
-                            ☁️ SIMPAN KE SERVER
+                            ☁️ SIMPAN TRANSAKSI DANA
                         </button>
                     </form>
                 </div>
@@ -286,7 +286,6 @@
                         <h2 id="riwayat-title" class="text-2xl font-black text-slate-800">Buku Kas (Riwayat)</h2>
                     </div>
                     <div class="flex items-center gap-3 w-full md:w-auto">
-                        <!-- DROPDOWN FILTER PROKER (Khusus Admin) -->
                         <select id="filter-proker-riwayat" onchange="renderRiwayat()" class="hidden w-full md:w-auto p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
                             <option value="SEMUA">Semua Proker</option>
                             <option value="STRATEGIC PARTNERSHIP">Strategic Partnership</option>
@@ -299,7 +298,6 @@
                     </div>
                 </div>
 
-                <!-- KARTU SUMMARY KHUSUS BUKU KAS FILTER -->
                 <div id="riwayat-summary" class="grid grid-cols-3 gap-4 mb-4 hidden">
                     <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl shadow-sm">
                         <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Total Masuk</p>
@@ -356,12 +354,8 @@
                     </div>
                 </div>
 
-                <!-- CONTAINER UNTUK GRAND TOTAL -->
                 <div id="af-grand-total" class="mt-6"></div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6" id="af-summary-cards">
-                    <!-- Cards SGE, Strategic, Filkommerch, PDH akan dirender di sini lewat JS -->
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6" id="af-summary-cards"></div>
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-8">
                     <div class="p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
@@ -407,105 +401,136 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-4 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-medium flex items-center gap-2">
                         <i data-lucide="info" class="w-4 h-4 text-blue-500"></i> 
-                        Tips: Ubah status cicilan di kotak bawah ini. Data akan otomatis tersimpan dalam 1 detik. Geser ke kanan (Scroll) untuk melihat bulan lainnya.
+                        Tips: Ubah status cicilan di kotak bawah ini. Data akan otomatis tersimpan. Geser ke kanan (Scroll) untuk melihat bulan lainnya.
                     </div>
                     <div class="overflow-x-auto relative">
                         <table class="w-full text-left border-collapse whitespace-nowrap min-w-[1200px]">
                             <thead id="kas-thead">
-                                <!-- Rendered by JS -->
                             </thead>
                             <tbody id="kas-tbody" class="divide-y divide-slate-100">
-                                <!-- Rendered by JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: STOK & RUGI SGE (KHUSUS ADMIN & SGE) -->
+            <!-- VIEW BARU: STOK & RUGI SGE (LEDGER SYSTEM) -->
             <div id="view-stoksge" class="view-section fade-in space-y-6 hidden">
                 <div class="flex flex-col md:flex-row justify-between md:items-end border-b border-slate-200 pb-6 gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="bg-purple-100 p-3 rounded-xl hidden md:block border border-purple-200"><i data-lucide="package" class="w-8 h-8 text-purple-700"></i></div>
+                        <div class="bg-purple-100 p-3 rounded-xl hidden md:block border border-purple-200"><i data-lucide="boxes" class="w-8 h-8 text-purple-700"></i></div>
                         <div>
-                            <h2 class="text-3xl font-black text-slate-800">Stok & Kerugian SGE</h2>
-                            <p class="text-slate-500 font-medium">Pantau sisa barang dan catat kerugian akibat barang hilang/tidak dibayar secara spesifik.</p>
+                            <h2 class="text-3xl font-black text-slate-800">Manajemen Stok SGE</h2>
+                            <p class="text-slate-500 font-medium">Buku besar keluar-masuk barang spesifik per item & lacak kerugian.</p>
                         </div>
                     </div>
-                    <div class="bg-rose-50 px-6 py-3 rounded-2xl border border-rose-200 text-right shadow-sm">
-                        <p class="text-[11px] text-rose-700 uppercase font-black tracking-widest">Total Nominal Rugi</p>
-                        <p id="total-sge-rugi" class="text-2xl font-black text-rose-600">Rp 0</p>
+                    <div class="flex gap-3 overflow-x-auto pb-2 md:pb-0">
+                        <div class="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 shadow-sm text-center">
+                            <p class="text-[10px] text-emerald-700 uppercase font-bold tracking-widest">Total Masuk</p>
+                            <p id="stok-total-in" class="text-xl font-black text-emerald-600">0 pcs</p>
+                        </div>
+                        <div class="bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 shadow-sm text-center">
+                            <p class="text-[10px] text-blue-700 uppercase font-bold tracking-widest">Total Terjual</p>
+                            <p id="stok-total-out" class="text-xl font-black text-blue-600">0 pcs</p>
+                        </div>
+                        <div class="bg-rose-50 px-4 py-2 rounded-xl border border-rose-200 shadow-sm text-center min-w-[140px]">
+                            <p class="text-[10px] text-rose-700 uppercase font-bold tracking-widest">Total Rugi/Bocor</p>
+                            <p id="stok-total-rugi" class="text-xl font-black text-rose-600">Rp 0</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <!-- BAGIAN STOK SPESIFIK -->
-                    <div class="xl:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-3">
-                            <i data-lucide="boxes" class="text-purple-600 w-5 h-5"></i> Update Sisa Stok Produk
-                        </h3>
-                        <div id="sge-stock-container">
-                            <!-- Rendered by JS secara spesifik dan di-scroll -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    
+                    <!-- KIRI: FORM MUTASI STOK -->
+                    <div class="xl:col-span-1 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden h-fit">
+                        <div class="bg-purple-50 p-5 border-b border-purple-100 flex items-center gap-3">
+                            <div class="bg-purple-200 p-2 rounded-lg text-purple-700"><i data-lucide="package-plus"></i></div>
+                            <h3 class="font-bold text-slate-800 text-lg">Catat Mutasi Barang</h3>
                         </div>
-                        <p class="text-xs text-slate-400 mt-4 text-center">Data stok tersimpan otomatis saat angka diubah</p>
+                        <form id="stock-ledger-form" class="p-5 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal</label>
+                                <input type="date" id="stock-date" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-medium"/>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kategori</label>
+                                    <select id="stock-category" onchange="updateStockItemDropdown()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 cursor-pointer">
+                                        <option value="ICE CREAM">ICE CREAM</option>
+                                        <option value="MINUMAN">MINUMAN</option>
+                                        <option value="SNAK & BARANG">SNAK & BARANG</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Jumlah (Pcs)</label>
+                                    <input type="number" id="stock-qty" min="1" required placeholder="Jml" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold"/>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Barang</label>
+                                <select id="stock-item" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 cursor-pointer">
+                                    <!-- Rendered dynamically -->
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Jenis Mutasi</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" id="btn-stok-masuk" onclick="setStockType('masuk')" class="p-2.5 rounded-lg border-2 font-bold text-sm transition-all border-emerald-500 bg-emerald-50 text-emerald-700">
+                                        📥 MASUK
+                                    </button>
+                                    <button type="button" id="btn-stok-keluar" onclick="setStockType('keluar')" class="p-2.5 rounded-lg border-2 font-bold text-sm transition-all border-slate-200 bg-white text-slate-400 hover:border-rose-300 hover:text-rose-500">
+                                        📤 KELUAR
+                                    </button>
+                                </div>
+                                <input type="hidden" id="stock-type" value="masuk">
+                            </div>
+
+                            <div id="loss-input-container" class="hidden animate-in fade-in slide-in-from-top-2">
+                                <label class="block text-xs font-bold text-rose-500 uppercase mb-1">💸 Nominal Kerugian (Jika Hilang/Bocor)</label>
+                                <input type="text" inputmode="numeric" id="stock-loss-nominal" oninput="formatRupiahInput(this)" placeholder="Rp 0 (Kosongkan jika laku normal)" class="w-full p-2.5 bg-rose-50 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none text-sm font-bold text-rose-700 placeholder:text-rose-300"/>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Keterangan Singkat</label>
+                                <input type="text" id="stock-desc" required placeholder="Contoh: Restock dari agen / Laku / Ilang" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
+                            </div>
+
+                            <button type="submit" id="btn-submit-stock" class="w-full py-3 mt-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98]">
+                                SIMPAN BUKU STOK
+                            </button>
+                        </form>
                     </div>
 
-                    <!-- BAGIAN INPUT RUGI -->
-                    <div class="xl:col-span-1 space-y-6">
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                            <h3 class="font-bold text-rose-700 mb-4 flex items-center gap-2 border-b border-rose-100 pb-3">
-                                <i data-lucide="alert-triangle" class="w-5 h-5"></i> Catat Barang Hilang / Nunggak
+                    <!-- TENGAH: RIWAYAT BUKU BESAR STOK -->
+                    <div class="xl:col-span-1 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[550px]">
+                        <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i data-lucide="list-ordered" class="w-4 h-4 text-slate-500"></i> Riwayat Mutasi Stok
                             </h3>
-                            <form id="sge-loss-form" class="space-y-4">
-                                <div class="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Kejadian</label>
-                                        <input type="date" id="loss-date" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Barang yang Hilang</label>
-                                        <select id="loss-item" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 cursor-pointer">
-                                            <!-- Rendered by JS -->
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nominal Rugi / Belum Dibayar (Rp)</label>
-                                        <input type="text" inputmode="numeric" id="loss-nominal" oninput="formatRupiahInput(this)" required placeholder="Misal: 5000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold"/>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Keterangan Singkat</label>
-                                        <input type="text" id="loss-desc" required placeholder="Misal: Ilang 2 pcs di sekre" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
-                                    </div>
-                                </div>
-                                <button type="submit" id="btn-submit-loss" class="w-full py-3 mt-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] text-sm">
-                                    🚨 SIMPAN DATA KERUGIAN
-                                </button>
-                            </form>
                         </div>
-
-                        <!-- TABEL RIWAYAT KERUGIAN -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="p-5 bg-rose-50 border-b border-rose-100 flex justify-between items-center">
-                                <h3 class="font-bold text-rose-800 flex items-center gap-2">
-                                    <i data-lucide="list-x" class="w-5 h-5 text-rose-600"></i> Riwayat Kerugian
-                                </h3>
-                            </div>
-                            <div class="overflow-x-auto max-h-80 custom-scrollbar">
-                                <table class="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr class="bg-white text-slate-500 text-xs border-b border-slate-200 sticky top-0 z-10">
-                                            <th class="p-3 font-bold uppercase tracking-wider">Tgl & Brg</th>
-                                            <th class="p-3 font-bold uppercase tracking-wider text-right">Rugi</th>
-                                            <th class="p-3 font-bold uppercase tracking-wider text-center w-12">Hapus</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="loss-table-body" class="divide-y divide-slate-100 text-sm font-medium"></tbody>
-                                </table>
-                            </div>
+                        <div class="overflow-y-auto flex-1 custom-scrollbar p-2">
+                            <ul id="stock-history-list" class="space-y-2">
+                                <!-- Rendered by JS -->
+                            </ul>
                         </div>
                     </div>
+
+                    <!-- KANAN: SISA STOK SAAT INI (CALCULATED) -->
+                    <div class="xl:col-span-1 bg-white rounded-3xl shadow-sm border border-slate-200 p-5 h-[550px] flex flex-col">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-3">
+                            <i data-lucide="check-circle-2" class="text-emerald-500 w-5 h-5"></i> Sisa Stok Terkini
+                        </h3>
+                        <p class="text-[10px] text-slate-400 mb-3 leading-tight">Data di bawah ini dihitung otomatis dari riwayat Barang Masuk dikurangi Barang Keluar. (Hanya menampilkan stok > 0).</p>
+                        
+                        <div id="stock-current-container" class="overflow-y-auto flex-1 custom-scrollbar pr-2 space-y-4">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -532,13 +557,11 @@
         
         let currentDataHash = '';
         let currentKasHash = '';
-        let currentSgeStockHash = '';
-        let currentSgeLossesHash = '';
+        let currentStockLedgerHash = '';
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
-        const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
         
-        // DAFTAR PRODUK SGE SPESIFIK BERDASARKAN KATALOG 
+        // KATALOG SPESIFIK SGE
         const detailedSgeItems = {
             "ICE CREAM": [
                 "3 IN 1 COLOR CUP", "BANANA CRISPY", "BERRY CHOCO MAX CONE", "BINGO (Chocolate Stick)", "BLUEBERY COOKIES", 
@@ -566,7 +589,7 @@
                 "Nutriboost Strawberry 300ml", "Nutriboost Orange 300ml", 
                 "Sprite Waterlymon 425ml", "Ades 600ml", "Ades 1.5L"
             ],
-            "LAINNYA": ["POP MIE", "PDH KKN", "BARANG LAINNYA"]
+            "SNAK & BARANG": ["POP MIE", "PDH KKN", "PLASTIK / KRESEK BESAR", "LAKBAN", "BARANG LAINNYA"]
         };
 
         const userCredentials = {
@@ -584,10 +607,9 @@
         const kasMonths = ['Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         let kasData = {};
 
-        let sgeStock = {}; 
-        // Init semua barang jadi 0
-        Object.values(detailedSgeItems).flat().forEach(item => sgeStock[item] = 0);
-        let sgeLosses = [];
+        // Data Ledger Stok SGE
+        let stockLedger = []; 
+        let calculatedStock = {}; // Sisa stok (Dihitung dari ledger)
 
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
@@ -602,8 +624,8 @@
             }
         };
 
-        function getCleanNominal() {
-            const val = document.getElementById('input-nominal').value;
+        function getCleanNominal(inputId) {
+            const val = document.getElementById(inputId)?.value || '';
             return parseInt(val.replace(/[^0-9]/g, '')) || 0;
         }
 
@@ -612,39 +634,51 @@
         document.getElementById('report-month').value = currentMonthString;
         document.getElementById('input-date').valueAsDate = new Date();
         
-        const lossDateEl = document.getElementById('loss-date');
-        if(lossDateEl) lossDateEl.valueAsDate = new Date();
+        const stockDateEl = document.getElementById('stock-date');
+        if(stockDateEl) stockDateEl.valueAsDate = new Date();
 
-        function populateLossDropdown() {
-            const select = document.getElementById('loss-item');
-            if(!select) return;
+        // Dropdown updater for Stok SGE
+        window.updateStockItemDropdown = function() {
+            const cat = document.getElementById('stock-category').value;
+            const itemSelect = document.getElementById('stock-item');
+            if(!itemSelect) return;
+            
             let html = '';
-            for(let cat in detailedSgeItems) {
-                html += `<optgroup label="${cat}">`;
-                detailedSgeItems[cat].forEach(item => {
-                    html += `<option value="${item}">${item}</option>`;
-                });
-                html += `</optgroup>`;
+            (detailedSgeItems[cat] || []).forEach(item => {
+                html += `<option value="${item}">${item}</option>`;
+            });
+            itemSelect.innerHTML = html;
+        };
+
+        setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); }, 500);
+
+        // =========================================================================
+        // FETCH DATA MURNI DENGAN TIMEOUT
+        // =========================================================================
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                throw error;
             }
-            select.innerHTML = html;
         }
 
-        setTimeout(() => { safeCreateIcons(); populateLossDropdown(); }, 500);
-
-        // =========================================================================
-        // FETCH DATA MURNI 
-        // =========================================================================
         window.fetchDatabase = async function() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                const [resTx, resKas, resPdh, resSgeStock, resSgeLosses] = await Promise.all([
-                    fetch(`${RTDB_URL}/transactions.json`),
-                    fetch(`${RTDB_URL}/kas_ce.json`),
-                    fetch(`${RTDB_URL}/pdh_bem.json`),
-                    fetch(`${RTDB_URL}/sge_stock.json`),
-                    fetch(`${RTDB_URL}/sge_losses.json`)
+                // Tembak 4 Endpoint secara bersamaan
+                const [resTx, resKas, resPdh, resLedger] = await Promise.all([
+                    fetchWithTimeout(`${RTDB_URL}/transactions.json`),
+                    fetchWithTimeout(`${RTDB_URL}/kas_ce.json`),
+                    fetchWithTimeout(`${RTDB_URL}/pdh_bem.json`),
+                    fetchWithTimeout(`${RTDB_URL}/sge_stock_ledger.json`)
                 ]);
                 
                 if (resTx.ok) {
@@ -668,25 +702,17 @@
                     if(dataPdh && dataPdh.sold !== undefined) pdhBemSold = dataPdh.sold;
                 }
 
-                if (resSgeStock.ok) {
-                    const dataStock = await resSgeStock.json();
-                    const newStockHash = JSON.stringify(dataStock);
-                    if (newStockHash !== currentSgeStockHash) {
-                        if (dataStock) {
-                            Object.keys(dataStock).forEach(k => sgeStock[k] = dataStock[k]);
-                        }
-                        currentSgeStockHash = newStockHash;
+                if (resLedger.ok) {
+                    const dataLedger = await resLedger.json();
+                    let fetchedLedger = [];
+                    if (dataLedger) {
+                        for (let key in dataLedger) { fetchedLedger.push({ dbId: key, ...dataLedger[key] }); }
                     }
-                }
-
-                if (resSgeLosses.ok) {
-                    const dataLosses = await resSgeLosses.json();
-                    let fetchedLosses = [];
-                    if (dataLosses) {
-                        for (let key in dataLosses) { fetchedLosses.push({ dbId: key, ...dataLosses[key] }); }
+                    const newLedgerHash = JSON.stringify(fetchedLedger);
+                    if (newLedgerHash !== currentStockLedgerHash) { 
+                        stockLedger = fetchedLedger; 
+                        currentStockLedgerHash = newLedgerHash; 
                     }
-                    const newLossHash = JSON.stringify(fetchedLosses);
-                    if (newLossHash !== currentSgeLossesHash) { sgeLosses = fetchedLosses; currentSgeLossesHash = newLossHash; }
                 }
 
                 if (currentUser) updateUI();
@@ -712,9 +738,7 @@
 
         function startSync() {
             fetchDatabase(); 
-            if (!syncInterval) {
-                syncInterval = setInterval(fetchDatabase, 20000); 
-            }
+            if (!syncInterval) { syncInterval = setInterval(fetchDatabase, 20000); }
         }
 
         function stopSync() {
@@ -789,8 +813,6 @@
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('login-error').classList.add('hidden');
-            document.getElementById('login-username').value = '';
-            document.getElementById('login-password').value = '';
         }
 
         function updateUI() {
@@ -802,7 +824,7 @@
                 try { renderKasTable(); } catch(e) {}
             }
             if (currentUser === 'GLOBAL' || currentUser === 'SGE MARKET HUB') {
-                try { renderSgeStock(); } catch(e) {}
+                try { renderSgeStockTab(); } catch(e) {}
             }
             try { renderRiwayat(); } catch(e) {}
             safeCreateIcons();
@@ -815,102 +837,53 @@
         }
 
         // =========================================================================
-        // FITUR STOK SPESIFIK & KERUGIAN SGE
+        // FITUR BARU: MANAJEMEN STOK SGE (LEDGER BASED)
         // =========================================================================
-        window.updateStockVal = async function(itemName, val) {
-            let num = parseInt(val) || 0;
-            if (num < 0) num = 0;
-            
-            sgeStock[itemName] = num;
-            try {
-                await fetch(`${RTDB_URL}/sge_stock.json`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [itemName]: num })
-                });
-            } catch(e) {
-                console.error("Gagal update stok", e);
-            }
-        }
+        
+        window.setStockType = function(type) {
+            document.getElementById('stock-type').value = type;
+            const btnIn = document.getElementById('btn-stok-masuk');
+            const btnOut = document.getElementById('btn-stok-keluar');
+            const lossContainer = document.getElementById('loss-input-container');
 
-        function renderSgeStock() {
-            let totalLoss = sgeLosses.reduce((sum, item) => sum + item.nominal, 0);
-            document.getElementById('total-sge-rugi').innerText = formatRp(totalLoss);
-
-            // Render Kartu Input Stok Spesifik
-            let stockHTML = '';
-            for (const category in detailedSgeItems) {
-                stockHTML += `
-                    <div class="mb-5">
-                        <h4 class="font-bold text-slate-700 bg-slate-100 p-2 rounded-lg mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
-                            ${category === 'ICE CREAM' ? '🍦' : category === 'MINUMAN' ? '🥤' : '📦'} ${category}
-                        </h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-2 custom-scrollbar border border-slate-100 p-2 rounded-xl bg-slate-50/50">
-                `;
-                
-                detailedSgeItems[category].forEach(item => {
-                    let currentVal = sgeStock[item] || 0;
-                    stockHTML += `
-                            <div class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 hover:border-purple-300 transition-colors shadow-sm">
-                                <span class="text-xs font-bold text-slate-600 truncate w-32 md:w-40" title="${item}">${item}</span>
-                                <div class="flex items-center gap-1">
-                                    <input type="number" min="0" value="${currentVal}" onchange="updateStockVal('${item}', this.value)" class="w-16 p-1.5 text-center font-black text-purple-700 bg-purple-50 border border-purple-200 rounded-md outline-none focus:ring-2 focus:ring-purple-500 transition-all text-xs">
-                                </div>
-                            </div>
-                    `;
-                });
-                stockHTML += `</div></div>`;
-            }
-            document.getElementById('sge-stock-container').innerHTML = stockHTML;
-
-            // Render Tabel Kerugian
-            let lossHTML = '';
-            if (sgeLosses.length === 0) {
-                lossHTML = `<tr><td colspan="3" class="p-8 text-center text-slate-400 font-medium">Belum ada catatan kehilangan. Aman! 🎉</td></tr>`;
+            if (type === 'masuk') {
+                btnIn.className = "p-2.5 rounded-lg border-2 font-bold text-sm transition-all border-emerald-500 bg-emerald-50 text-emerald-700";
+                btnOut.className = "p-2.5 rounded-lg border-2 font-bold text-sm transition-all border-slate-200 bg-white text-slate-400 hover:border-rose-300 hover:text-rose-500";
+                lossContainer.classList.add('hidden');
+                document.getElementById('stock-loss-nominal').value = ''; // Reset
             } else {
-                const sortedLosses = [...sgeLosses].sort((a,b) => b.createdAt - a.createdAt);
-                sortedLosses.forEach(l => {
-                    lossHTML += `
-                        <tr class="hover:bg-rose-50/50 transition-colors">
-                            <td class="p-3">
-                                <div class="text-[10px] text-slate-400 font-bold uppercase">${l.date}</div>
-                                <div class="text-xs font-black text-rose-700">${l.item}</div>
-                                <div class="text-xs text-slate-600 italic">"${l.desc}"</div>
-                            </td>
-                            <td class="p-3 text-right font-black text-rose-600 text-sm align-middle">${formatRp(l.nominal)}</td>
-                            <td class="p-3 text-center align-middle">
-                                <button onclick="deleteSgeLoss('${l.dbId}')" class="p-2 bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 rounded-lg shadow-sm transition-all">
-                                    🗑️
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                btnOut.className = "p-2.5 rounded-lg border-2 font-bold text-sm transition-all border-rose-500 bg-rose-50 text-rose-700";
+                btnIn.className = "p-2.5 rounded-lg border-2 font-bold text-sm transition-all border-slate-200 bg-white text-slate-400 hover:border-emerald-300 hover:text-emerald-500";
+                lossContainer.classList.remove('hidden');
             }
-            document.getElementById('loss-table-body').innerHTML = lossHTML;
         }
 
-        document.getElementById('sge-loss-form')?.addEventListener('submit', async function(e) {
+        document.getElementById('stock-ledger-form')?.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const nominalInput = document.getElementById('loss-nominal');
-            const nominalVal = parseInt(nominalInput.value.replace(/[^0-9]/g, ''));
             
-            if(!nominalVal || nominalVal === 0) { alert('Nominal kerugian harus diisi dengan benar!'); return; }
+            const type = document.getElementById('stock-type').value;
+            const qty = parseInt(document.getElementById('stock-qty').value);
+            const lossNominal = type === 'keluar' ? getCleanNominal('stock-loss-nominal') : 0;
+            
+            if(!qty || qty <= 0) return alert("Jumlah barang harus lebih dari 0");
 
             const data = {
-                date: document.getElementById('loss-date').value,
-                item: document.getElementById('loss-item').value,
-                nominal: nominalVal,
-                desc: document.getElementById('loss-desc').value,
+                date: document.getElementById('stock-date').value,
+                category: document.getElementById('stock-category').value,
+                item: document.getElementById('stock-item').value,
+                type: type,
+                qty: qty,
+                lossNominal: lossNominal,
+                desc: document.getElementById('stock-desc').value,
                 createdAt: Date.now()
             };
 
-            const btn = document.getElementById('btn-submit-loss');
+            const btn = document.getElementById('btn-submit-stock');
             btn.innerHTML = '⏳ MENYIMPAN...';
             btn.disabled = true;
 
             try {
-                const response = await fetch(`${RTDB_URL}/sge_losses.json`, {
+                const response = await fetchWithTimeout(`${RTDB_URL}/sge_stock_ledger.json`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -918,32 +891,133 @@
                 
                 if(!response.ok) throw new Error("Gagal simpan");
                 
-                nominalInput.value = '';
-                document.getElementById('loss-desc').value = '';
-                document.getElementById('loss-date').valueAsDate = new Date();
+                // Reset form
+                document.getElementById('stock-qty').value = '';
+                document.getElementById('stock-loss-nominal').value = '';
+                document.getElementById('stock-desc').value = '';
                 
                 await fetchDatabase();
-                alert('✅ Data kerugian berhasil dicatat ke sistem.');
+                alert('✅ Buku stok berhasil diperbarui!');
             } catch(error) {
-                alert('❌ Gagal menyimpan data kerugian. Pastikan internet menyala.');
+                alert('❌ Gagal menyimpan stok. Pastikan internet stabil.');
             } finally {
-                btn.innerHTML = '🚨 SIMPAN DATA KERUGIAN';
+                btn.innerHTML = 'SIMPAN BUKU STOK';
                 btn.disabled = false;
             }
         });
 
-        window.deleteSgeLoss = async function(dbId) {
-            if(confirm('Yakin ingin menghapus catatan kerugian ini?')) {
+        window.deleteStockLedger = async function(dbId) {
+            if(confirm('Yakin ingin menghapus riwayat mutasi stok ini? (Ini akan mempengaruhi perhitungan Sisa Stok)')) {
                 try {
-                    await fetch(`${RTDB_URL}/sge_losses/${dbId}.json`, { method: 'DELETE' });
+                    await fetch(`${RTDB_URL}/sge_stock_ledger/${dbId}.json`, { method: 'DELETE' });
                     fetchDatabase();
                 } catch(e) { alert('Gagal menghapus data.'); }
             }
         }
 
+        function renderSgeStockTab() {
+            // Kalkulasi dari Ledger
+            calculatedStock = {};
+            let totalIn = 0;
+            let totalOut = 0;
+            let totalRugi = 0;
+
+            stockLedger.forEach(log => {
+                if(!calculatedStock[log.item]) {
+                    calculatedStock[log.item] = { qty: 0, cat: log.category };
+                }
+                
+                if (log.type === 'masuk') {
+                    calculatedStock[log.item].qty += log.qty;
+                    totalIn += log.qty;
+                } else {
+                    calculatedStock[log.item].qty -= log.qty;
+                    totalOut += log.qty;
+                    if(log.lossNominal) totalRugi += log.lossNominal;
+                }
+            });
+
+            // Update Summary Cards
+            document.getElementById('stok-total-in').innerText = totalIn + " pcs";
+            document.getElementById('stok-total-out').innerText = totalOut + " pcs";
+            document.getElementById('stok-total-rugi').innerText = formatRp(totalRugi);
+
+            // Render History List
+            let historyHTML = '';
+            if (stockLedger.length === 0) {
+                historyHTML = `<li class="p-6 text-center text-slate-400 text-xs">Belum ada riwayat pergerakan stok.</li>`;
+            } else {
+                const sortedLedger = [...stockLedger].sort((a,b) => b.createdAt - a.createdAt);
+                sortedLedger.forEach(l => {
+                    const isMasuk = l.type === 'masuk';
+                    const icon = isMasuk ? '📥' : '📤';
+                    const colorText = isMasuk ? 'text-emerald-600' : 'text-rose-600';
+                    const colorBg = isMasuk ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100';
+                    const lossTag = l.lossNominal > 0 ? `<span class="text-[10px] bg-rose-200 text-rose-800 px-1.5 py-0.5 rounded ml-2">Rugi: ${formatRp(l.lossNominal)}</span>` : '';
+
+                    historyHTML += `
+                        <li class="flex items-center justify-between p-3 rounded-xl border ${colorBg}">
+                            <div class="flex items-start gap-3">
+                                <div class="text-xl pt-1">${icon}</div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-700">${l.item} <span class="${colorText} ml-1 font-black">${isMasuk ? '+' : '-'}${l.qty}</span></p>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">${l.date} • ${l.desc} ${lossTag}</p>
+                                </div>
+                            </div>
+                            <button onclick="deleteStockLedger('${l.dbId}')" class="text-slate-400 hover:text-rose-600 p-2" title="Hapus Mutasi">🗑️</button>
+                        </li>
+                    `;
+                });
+            }
+            document.getElementById('stock-history-list').innerHTML = historyHTML;
+
+            // Render Current Stock
+            let currentStockHTML = '';
+            let hasStock = false;
+            
+            // Group by category for neat display
+            const groupedStock = { "ICE CREAM": [], "MINUMAN": [], "SNAK & BARANG": [] };
+            
+            for (let item in calculatedStock) {
+                if (calculatedStock[item].qty > 0) {
+                    let cat = calculatedStock[item].cat;
+                    if(groupedStock[cat]) {
+                        groupedStock[cat].push({ name: item, qty: calculatedStock[item].qty });
+                        hasStock = true;
+                    }
+                }
+            }
+
+            if (!hasStock) {
+                currentStockHTML = `<div class="p-6 text-center text-slate-400 text-sm">Stok kosong. Silakan catat barang masuk terlebih dahulu.</div>`;
+            } else {
+                for (let cat in groupedStock) {
+                    if(groupedStock[cat].length > 0) {
+                        currentStockHTML += `
+                            <div class="mb-4">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b pb-1">${cat}</h4>
+                                <div class="space-y-2">
+                        `;
+                        groupedStock[cat].forEach(i => {
+                            currentStockHTML += `
+                                <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                    <span class="text-xs font-bold text-slate-700 truncate pr-2" title="${i.name}">${i.name}</span>
+                                    <span class="text-sm font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200">${i.qty}</span>
+                                </div>
+                            `;
+                        });
+                        currentStockHTML += `</div></div>`;
+                    }
+                }
+            }
+            document.getElementById('stock-current-container').innerHTML = currentStockHTML;
+        }
+
+
         // =========================================================================
-        // AUTO-SAVE UPDATE PDH BEM (Khusus Laporan AF)
+        // DASHBOARD, LAPORAN, KAS CE, RIWAYAT TRANSAKSI KEUANGAN
         // =========================================================================
+        
         window.updatePdhBem = async function(val) {
             let sold = parseInt(val) || 0;
             if (sold < 0) sold = 0;
@@ -959,12 +1033,9 @@
                     body: JSON.stringify({ sold: sold })
                 });
                 renderLaporanAF(); 
-            } catch(e) { console.error(e); alert("❌ Gagal menyimpan data PDH BEM. Cek internetmu!"); }
+            } catch(e) { alert("❌ Gagal menyimpan data PDH BEM."); }
         }
 
-        // =========================================================================
-        // RENDER TABEL UANG KAS CE
-        // =========================================================================
         function renderKasTable() {
             let totalKasTerkumpul = 0;
             let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
@@ -1006,7 +1077,6 @@
 
         window.updateKas = async function(selectElement, name, month) {
             const val = parseInt(selectElement.value);
-            
             selectElement.className = "w-full py-2 px-1 text-[11px] font-black rounded-lg border outline-none cursor-pointer text-center appearance-none shadow-sm transition-colors animate-pulse " + 
                 (val == 0 ? 'bg-rose-50 text-rose-600 border-rose-200' : 
                 (val == 10000 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'));
@@ -1021,7 +1091,7 @@
                     body: JSON.stringify({ [month]: val })
                 });
 
-                if(!response.ok) throw new Error("Gagal Patch Kas");
+                if(!response.ok) throw new Error("Gagal");
                 selectElement.classList.remove('animate-pulse');
                 
                 let total = 0;
@@ -1031,15 +1101,11 @@
                 document.getElementById('total-kas-terkumpul').innerText = formatRp(total);
 
             } catch(e) {
-                console.error(e);
-                alert(`❌ Gagal menyimpan status kas ${name} di bulan ${month}. Cek internetmu!`);
+                alert(`❌ Gagal menyimpan status kas.`);
                 selectElement.classList.remove('animate-pulse');
             }
         }
 
-        // =========================================================================
-        // DASHBOARD, LAPORAN, RIWAYAT
-        // =========================================================================
         let barChartObj = null;
         let pieChartObj = null;
 
@@ -1125,7 +1191,7 @@
                         options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } }
                     });
                 }
-            } catch (error) { console.error("Gagal merender grafik:", error); }
+            } catch (error) {}
         }
 
         window.renderLaporanAF = function() {
@@ -1139,6 +1205,7 @@
 
             const filteredTx = transactions.filter(t => t.date.startsWith(monthVal));
 
+            // SGE MARKET HUB
             const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
             const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -1146,6 +1213,7 @@
             const sgeAfShare = sgeNet > 0 ? sgeNet * 0.5 : 0;
             const sgeCeShare = sgeNet > 0 ? sgeNet * 0.5 : sgeNet; 
 
+            // STRATEGIC PARTNERSHIP
             const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
             const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -1153,6 +1221,7 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
+            // FILKOMMERCH 
             const merchTx = filteredTx.filter(t => t.proker === 'FILKOMMERCH');
             const merchIn = merchTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const merchOut = merchTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -1160,6 +1229,7 @@
             const merchAfShare = 0; 
             const merchCeShare = merchNet;
 
+            // PDH BEM 
             const pdhOmset = pdhBemSold * 240000;
             const pdhModal = pdhBemSold * 220000;
             const pdhNet = pdhOmset - pdhModal;
@@ -1376,10 +1446,8 @@
                 }
             }
 
-            const visibleTransactions = filteredTx;
-
-            const sumIn = visibleTransactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-            const sumOut = visibleTransactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const sumIn = filteredTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const sumOut = filteredTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const sumBal = sumIn - sumOut;
 
             document.getElementById('riwayat-sum-in').innerText = formatRp(sumIn);
@@ -1387,16 +1455,14 @@
             document.getElementById('riwayat-sum-balance').innerText = formatRp(sumBal);
             
             const summaryContainer = document.getElementById('riwayat-summary');
-            if (summaryContainer) {
-                summaryContainer.classList.remove('hidden');
-            }
+            if (summaryContainer) summaryContainer.classList.remove('hidden');
 
-            if (visibleTransactions.length === 0) {
+            if (filteredTx.length === 0) {
                 document.getElementById('history-table-body').innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 font-medium">Belum ada data transaksi yang dicatat.</td></tr>`;
                 return;
             }
 
-            const sortedTx = [...visibleTransactions].sort((a,b) => b.createdAt - a.createdAt);
+            const sortedTx = [...filteredTx].sort((a,b) => b.createdAt - a.createdAt);
 
             sortedTx.forEach(t => {
                 const isPemasukan = t.type === 'pemasukan';
@@ -1504,7 +1570,7 @@
             document.getElementById('input-desc').value = tx.desc;
 
             const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.innerHTML = '🔄 PERBARUI DATA';
+            btnSubmit.innerHTML = '🔄 PERBARUI DATA TRANSAKSI';
             btnSubmit.className = "w-full py-4 mt-4 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2";
             
             safeCreateIcons();
@@ -1512,10 +1578,10 @@
         }
 
         window.deleteTx = async function(dbId) {
-            if(confirm('Yakin ingin menghapus transaksi ini permanen dari server?')) {
+            if(confirm('Yakin ingin menghapus transaksi KEUANGAN ini permanen?')) {
                 try {
                     const response = await fetch(`${RTDB_URL}/transactions/${dbId}.json`, { method: 'DELETE' });
-                    if (!response.ok) throw new Error("Gagal hapus di sisi server");
+                    if (!response.ok) throw new Error("Gagal hapus");
                     
                     alert("✅ Data berhasil dihapus dari server!");
                     fetchDatabase(); 
@@ -1535,7 +1601,7 @@
                 categoryVal = document.getElementById('input-category').value;
             }
 
-            const cleanNominal = getCleanNominal();
+            const cleanNominal = getCleanNominal('input-nominal');
             if(cleanNominal === 0) {
                 alert("Nominal tidak boleh kosong atau nol!");
                 return;
@@ -1568,12 +1634,9 @@
                     body: JSON.stringify(txData)
                 });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText);
-                }
+                if (!response.ok) throw new Error("Server Error");
                 
-                alert("✅ SUKSES TERSIMPAN!\nData sudah otomatis di-upload dan bisa dilihat di HP staf lain.");
+                alert("✅ SUKSES TERSIMPAN!\nData keuangan berhasil di-upload.");
                 
                 document.getElementById('input-nominal').value = '';
                 document.getElementById('input-desc').value = '';
@@ -1584,10 +1647,9 @@
                 window.switchTab('riwayat');
 
             } catch (error) {
-                console.error("Save Error:", error);
-                alert(`❌ KONEKSI GAGAL ATAU DITOLAK SERVER!\n\nPesan Error: ${error.message}\n\nPastikan koneksi internet stabil.`);
+                alert(`❌ KONEKSI GAGAL ATAU DITOLAK SERVER! Pastikan koneksi internet stabil.`);
             } finally {
-                submitBtn.innerHTML = '☁️ SIMPAN KE SERVER';
+                submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
                 submitBtn.disabled = false;
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
             }
@@ -1605,7 +1667,7 @@
             if (tabId !== 'input' && editingDbId) {
                 editingDbId = null;
                 const submitBtn = document.getElementById('btn-submit');
-                submitBtn.innerHTML = '☁️ SIMPAN KE SERVER';
+                submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
                 document.getElementById('input-nominal').value = '';
                 document.getElementById('input-desc').value = '';
@@ -1630,7 +1692,7 @@
 
             if(tabId === 'laporan') renderLaporanAF();
             if(tabId === 'kasce') renderKasTable();
-            if(tabId === 'stoksge') renderSgeStock();
+            if(tabId === 'stoksge') renderSgeStockTab();
             if(tabId === 'riwayat') renderRiwayat(); 
         }
 
