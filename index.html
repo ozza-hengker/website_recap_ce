@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=tambah_modal_restock_100';
+        const currentVersion = 'v=filter_buku_kas_101';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -271,16 +271,41 @@
 
             <!-- VIEW: BUKU KAS (RIWAYAT) -->
             <div id="view-riwayat" class="view-section fade-in space-y-6 hidden">
-                <div class="flex items-center justify-between mb-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-2 gap-4">
                     <div class="flex items-center gap-3">
                         <div class="bg-teal-100 p-2 rounded-lg border border-teal-200">
                             <i data-lucide="history" class="text-teal-700"></i>
                         </div>
                         <h2 id="riwayat-title" class="text-2xl font-black text-slate-800">Buku Kas (Riwayat)</h2>
                     </div>
-                    <button onclick="fetchDatabase()" id="btn-refresh" class="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm py-2 px-4 rounded-lg font-bold flex items-center gap-2 transition-colors active:scale-95">
-                        🔄 Segarkan Data
-                    </button>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <!-- DROPDOWN FILTER PROKER (Khusus Admin) -->
+                        <select id="filter-proker-riwayat" onchange="renderRiwayat()" class="hidden w-full md:w-auto p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
+                            <option value="SEMUA">Semua Proker</option>
+                            <option value="STRATEGIC PARTNERSHIP">Strategic Partnership</option>
+                            <option value="FILKOMMERCH">Filkommerch</option>
+                            <option value="SGE MARKET HUB">SGE Market Hub</option>
+                        </select>
+                        <button onclick="fetchDatabase()" id="btn-refresh" class="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm py-2.5 px-4 rounded-lg font-bold flex items-center gap-2 transition-colors active:scale-95 whitespace-nowrap">
+                            🔄 Segarkan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KARTU SUMMARY KHUSUS BUKU KAS FILTER -->
+                <div id="riwayat-summary" class="grid grid-cols-3 gap-4 mb-4 hidden">
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl shadow-sm">
+                        <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Total Masuk</p>
+                        <p id="riwayat-sum-in" class="text-lg md:text-xl font-black text-emerald-700">Rp 0</p>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-100 p-4 rounded-2xl shadow-sm">
+                        <p class="text-[10px] text-rose-600 font-bold uppercase tracking-wider mb-1">Total Keluar</p>
+                        <p id="riwayat-sum-out" class="text-lg md:text-xl font-black text-rose-700">Rp 0</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl shadow-sm">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Bersih</p>
+                        <p id="riwayat-sum-balance" class="text-lg md:text-xl font-black text-slate-800">Rp 0</p>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -571,6 +596,7 @@
                 document.getElementById('tab-kasce').classList.remove('hidden'); 
                 document.getElementById('dashboard-charts-container').classList.remove('hidden'); 
                 document.getElementById('proker-selector-container').classList.remove('hidden');
+                document.getElementById('filter-proker-riwayat').classList.remove('hidden');
                 window.switchTab('dashboard');
             } else {
                 document.getElementById('tab-dashboard').classList.add('hidden');
@@ -578,6 +604,8 @@
                 document.getElementById('tab-kasce').classList.add('hidden'); 
                 document.getElementById('dashboard-charts-container').classList.add('hidden'); 
                 document.getElementById('proker-selector-container').classList.add('hidden');
+                document.getElementById('filter-proker-riwayat').classList.add('hidden');
+                document.getElementById('filter-proker-riwayat').value = 'SEMUA';
                 document.getElementById('input-proker').value = role;
                 window.switchTab('input');
             }
@@ -850,9 +878,9 @@
 
             // Kalkulasi PDH BEM Khusus Admin
             const pdhOmset = pdhBemSold * 240000;
-            const pdhModal = pdhBemSold * 220000; // Dikurangi harga beli per pcs
-            const pdhNet = pdhOmset - pdhModal;   // Laba Bersih
-            const pdhShare = pdhNet * 0.5;        // Bagi hasil 50:50 dari Laba Bersih
+            const pdhModal = pdhBemSold * 220000;
+            const pdhNet = pdhOmset - pdhModal;
+            const pdhShare = pdhNet * 0.5;
 
             document.getElementById('af-summary-cards').innerHTML = `
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
@@ -1000,10 +1028,34 @@
 
         function renderRiwayat() {
             let tbodyHTML = '';
+            let filteredTx = transactions;
 
-            const visibleTransactions = currentUser === 'GLOBAL' 
-                ? transactions 
-                : transactions.filter(t => t.proker === currentUser);
+            // Logika Filter Per Proker untuk Admin
+            if (currentUser !== 'GLOBAL') {
+                filteredTx = transactions.filter(t => t.proker === currentUser);
+            } else {
+                const filterVal = document.getElementById('filter-proker-riwayat')?.value || 'SEMUA';
+                if (filterVal !== 'SEMUA') {
+                    filteredTx = transactions.filter(t => t.proker === filterVal);
+                }
+            }
+
+            const visibleTransactions = filteredTx;
+
+            // Hitung Summary Berdasarkan Filter yang Aktif
+            const sumIn = visibleTransactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const sumOut = visibleTransactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const sumBal = sumIn - sumOut;
+
+            document.getElementById('riwayat-sum-in').innerText = formatRp(sumIn);
+            document.getElementById('riwayat-sum-out').innerText = formatRp(sumOut);
+            document.getElementById('riwayat-sum-balance').innerText = formatRp(sumBal);
+            
+            // Tampilkan kartu summary jika bukan GLOBAL atau jika filter sedang aktif
+            const summaryContainer = document.getElementById('riwayat-summary');
+            if (summaryContainer) {
+                summaryContainer.classList.remove('hidden');
+            }
 
             if (visibleTransactions.length === 0) {
                 document.getElementById('history-table-body').innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 font-medium">Belum ada data transaksi yang dicatat.</td></tr>`;
@@ -1242,6 +1294,7 @@
 
             if(tabId === 'laporan') renderLaporanAF();
             if(tabId === 'kasce') renderKasTable();
+            if(tabId === 'riwayat') renderRiwayat(); // Paksa render ulang agar summary ter-update
         }
 
     </script>
