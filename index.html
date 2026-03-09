@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=grand_total_laporan_102';
+        const currentVersion = 'v=saldo_ce_gabung_103';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -112,7 +112,7 @@
                 </div>
                 <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
                     <div class="bg-teal-900/50 px-5 py-2 rounded-xl border border-teal-600/50 text-right shadow-inner">
-                        <p id="header-netto-label" class="text-[10px] text-teal-200 uppercase font-bold tracking-widest">Total Kas Bersih</p>
+                        <p id="header-netto-label" class="text-[10px] text-teal-200 uppercase font-bold tracking-widest">Total Saldo CE</p>
                         <p id="global-netto" class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-100">Rp 0</p>
                     </div>
                     <button onclick="logout()" class="p-2.5 bg-rose-500 hover:bg-rose-600 rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 text-white border border-rose-400" title="Keluar">
@@ -641,9 +641,9 @@
         }
 
         function updateHeaderNetto() {
-            const txsToCount = currentUser === 'GLOBAL' ? transactions : transactions.filter(t => t.proker === currentUser);
-            const inTotal = txsToCount.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-            const outTotal = txsToCount.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            // Ubah ini agar SELALU menampilkan saldo keseluruhan CE, tidak peduli siapa yang login
+            const inTotal = transactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const outTotal = transactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             document.getElementById('global-netto').innerText = formatRp(inTotal - outTotal);
         }
 
