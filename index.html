@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=filter_buku_kas_101';
+        const currentVersion = 'v=grand_total_laporan_102';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -50,9 +50,8 @@
 
             <div class="mb-10 relative z-10">
                 <div class="flex justify-center items-center gap-4 mb-6">
-                    <!-- LOGO FIXED DENGAN EKSTENSI PNG DAN SPASI %20 -->
                     <img src="logo%20bem.png" alt="Logo BEM" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
-                    <img src="LOGO%20CE.png" alt="Logo CE" class="h-20 w-20 rounded-full object-cover shadow-lg border-4 border-white/80" onerror="this.style.display='none'">
+                    <img src="LOGO%20CE.png" alt="Logo CE" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
                 </div>
                 <h2 class="text-3xl font-black text-slate-800 tracking-tight">Portal Keuangan</h2>
                 <p class="text-teal-600 font-bold text-sm mt-2 tracking-widest uppercase">Creative Enterprise 2026</p>
@@ -96,9 +95,8 @@
             <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-4">
                     <div class="flex bg-white/10 p-2 rounded-xl items-center gap-3 shadow-inner border border-white/10">
-                        <!-- LOGO FIXED DENGAN EKSTENSI PNG DAN SPASI %20 -->
                         <img src="logo%20bem.png" alt="BEM" class="h-10 object-contain drop-shadow-md" onerror="this.style.display='none'">
-                        <img src="LOGO%20CE.png" alt="CE" class="h-10 w-10 rounded-full object-cover border-2 border-white/50 shadow-md" onerror="this.style.display='none'">
+                        <img src="LOGO%20CE.png" alt="CE" class="h-10 object-contain drop-shadow-md" onerror="this.style.display='none'">
                     </div>
                     <div>
                         <h1 class="text-xl font-black tracking-tight drop-shadow-md">PORTAL KEUANGAN CE</h1>
@@ -348,9 +346,12 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- CONTAINER UNTUK GRAND TOTAL -->
+                <div id="af-grand-total" class="mt-6"></div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6" id="af-summary-cards">
-                    <!-- Cards SGE dan Strategic akan dirender di sini lewat JS -->
+                    <!-- Cards SGE, Strategic, Filkommerch, PDH akan dirender di sini lewat JS -->
                 </div>
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-8">
@@ -676,12 +677,10 @@
         function renderKasTable() {
             let totalKasTerkumpul = 0;
 
-            // Render Header
             let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
             kasMonths.forEach(m => thead += `<th class="p-3 text-center text-xs font-black text-slate-500 uppercase tracking-wider w-32 min-w-[120px]">${m}</th>`);
             thead += `</tr>`;
 
-            // Render Body
             let tbody = '';
             kasNames.forEach(name => {
                 tbody += `<tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">`;
@@ -862,6 +861,7 @@
 
             const filteredTx = transactions.filter(t => t.date.startsWith(monthVal));
 
+            // SGE MARKET HUB
             const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
             const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -869,6 +869,7 @@
             const sgeAfShare = sgeNet > 0 ? sgeNet * 0.5 : 0;
             const sgeCeShare = sgeNet > 0 ? sgeNet * 0.5 : sgeNet; 
 
+            // STRATEGIC PARTNERSHIP
             const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
             const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -876,13 +877,54 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
+            // FILKOMMERCH (100% Hak CE)
+            const merchTx = filteredTx.filter(t => t.proker === 'FILKOMMERCH');
+            const merchIn = merchTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const merchOut = merchTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const merchNet = merchIn - merchOut;
+            const merchAfShare = 0; 
+            const merchCeShare = merchNet;
+
             // Kalkulasi PDH BEM Khusus Admin
             const pdhOmset = pdhBemSold * 240000;
             const pdhModal = pdhBemSold * 220000;
             const pdhNet = pdhOmset - pdhModal;
-            const pdhShare = pdhNet * 0.5;
+            const pdhShare = pdhNet > 0 ? pdhNet * 0.5 : 0;
 
+            // GRAND TOTAL KESELURUHAN
+            const grandTotalBersih = sgeNet + stratNet + merchNet + pdhNet;
+            const grandTotalSetorAF = sgeAfShare + stratAfShare + merchAfShare + pdhShare;
+            const grandTotalPorsiCE = sgeCeShare + stratCeShare + merchCeShare + pdhShare;
+
+            // RENDER BANGER GRAND TOTAL
+            document.getElementById('af-grand-total').innerHTML = `
+                <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 opacity-10"><i data-lucide="pie-chart" class="w-48 h-48"></i></div>
+                    <div class="flex items-center gap-4 mb-4 md:mb-0 relative z-10 w-full md:w-auto">
+                        <div class="bg-white/10 p-4 rounded-2xl border border-white/20 backdrop-blur-sm">
+                            <i data-lucide="award" class="w-10 h-10 text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-1">Grand Total Setoran AF</h3>
+                            <p class="text-3xl md:text-4xl font-black text-emerald-400 drop-shadow-md">${formatRp(grandTotalSetorAF)}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-6 md:gap-8 relative z-10 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Laba Bersih BEM</p>
+                            <p class="text-xl font-bold text-white">${formatRp(grandTotalBersih)}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Porsi CE</p>
+                            <p class="text-xl font-bold text-cyan-300">${formatRp(grandTotalPorsiCE)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // RENDER KARTU-KARTU PROKER
             document.getElementById('af-summary-cards').innerHTML = `
+                <!-- KARTU SGE -->
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
@@ -912,6 +954,7 @@
                     </div>
                 </div>
 
+                <!-- KARTU STRATEGIC -->
                 <div class="bg-gradient-to-br from-cyan-50 to-white rounded-3xl p-8 border border-cyan-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
@@ -941,42 +984,69 @@
                     </div>
                 </div>
 
+                <!-- KARTU FILKOMMERCH -->
+                <div class="bg-gradient-to-br from-pink-50 to-white rounded-3xl p-8 border border-pink-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shopping-bag" class="w-24 h-24 text-pink-900"></i></div>
+                    <div class="flex items-center justify-between mb-6 relative z-10">
+                        <h3 class="font-black text-pink-900 text-xl">FILKOMMERCH</h3>
+                        <span class="bg-pink-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% Hak CE</span>
+                    </div>
+                    <div class="space-y-2 mb-6 relative z-10">
+                        <div class="flex justify-between text-sm font-medium text-slate-600">
+                            <span>Pemasukan Kotor</span> <span class="text-emerald-600 font-bold">${formatRp(merchIn)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-medium text-slate-600 pb-3 border-b border-pink-100">
+                            <span>Pengeluaran Operasional</span> <span class="text-rose-500 font-bold">-${formatRp(merchOut)}</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-black text-slate-800 pt-1">
+                            <span>Laba Bersih</span> <span>${formatRp(merchNet)}</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-pink-100 shadow-sm space-y-2 relative z-10">
+                        <div class="flex justify-between items-center pb-1">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (100%)</span>
+                            <span class="font-bold text-pink-600 text-xl">${formatRp(merchCeShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-2 border-t border-slate-50">
+                            <span class="text-xs font-black text-slate-400 uppercase tracking-wide">Setor ke AF</span>
+                            <span class="font-black text-slate-400 text-lg">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- KARTU KHUSUS PENJUALAN PDH BEM -->
-                <div class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-8 border border-indigo-100 shadow-sm relative overflow-hidden md:col-span-2">
+                <div class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-8 border border-indigo-100 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shirt" class="w-24 h-24 text-indigo-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
-                            PENJUALAN PDH BEM <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Khusus Admin</span>
+                            PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Khusus Admin</span>
                         </h3>
                         <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                        <div class="flex flex-col justify-center">
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Total PDH Terjual (Max 146)</label>
-                            <div class="flex items-center gap-4">
-                                <input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" max="146" onchange="updatePdhBem(this.value)" class="w-24 p-3 bg-white border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-black text-xl text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">
-                                <span class="text-sm font-bold text-slate-500">x <span class="text-indigo-600 text-lg">Rp 240.000</span></span>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-3">Data otomatis tersimpan saat angka diubah.</p>
+                    <div class="flex flex-col justify-center relative z-10 mb-4">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total PDH Terjual (Max 146)</label>
+                        <div class="flex items-center gap-3">
+                            <input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" max="146" onchange="updatePdhBem(this.value)" class="w-20 p-2 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-black text-lg text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">
+                            <span class="text-xs font-bold text-slate-500">x <span class="text-indigo-600 text-base">Rp 240k</span></span>
                         </div>
-                        <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2">
-                            <div class="flex justify-between text-xs font-medium text-slate-500">
-                                <span>Pemasukan (Jual 240k)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
-                            </div>
-                            <div class="flex justify-between text-xs font-medium text-slate-500 pb-2 border-b border-slate-100">
-                                <span>Modal (Beli 220k)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
-                            </div>
-                            <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
-                                <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
-                            </div>
-                            <div class="flex justify-between items-center pt-2">
-                                <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
-                                <span class="font-bold text-slate-700">${formatRp(pdhShare)}</span>
-                            </div>
-                            <div class="flex justify-between items-center pt-1">
-                                <span class="text-xs font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
-                                <span class="font-black text-indigo-600 text-xl">${formatRp(pdhShare)}</span>
-                            </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2 relative z-10">
+                        <div class="flex justify-between text-[11px] font-medium text-slate-500">
+                            <span>Pemasukan (240k)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] font-medium text-slate-500 pb-2 border-b border-slate-100">
+                            <span>Modal (Beli 220k)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
+                            <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
+                            <span class="font-bold text-slate-700 text-sm">${formatRp(pdhShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-[11px] font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
+                            <span class="font-black text-indigo-600 text-xl">${formatRp(pdhShare)}</span>
                         </div>
                     </div>
                 </div>
@@ -1023,7 +1093,7 @@
                 </tr>
             `;
 
-            safeCreateIcons(); // Reload ikon khusus kartu PDH BEM
+            safeCreateIcons(); 
         }
 
         function renderRiwayat() {
