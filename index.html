@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=saldo_ce_gabung_103';
+        const currentVersion = 'v=sge_stok_rugi_104';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -139,6 +139,10 @@
                 </button>
                 <button onclick="switchTab('kasce')" id="tab-kasce" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="wallet" class="w-5 h-5"></i> Uang Kas CE
+                </button>
+                <!-- MENU BARU: STOK & RUGI SGE (Hanya untuk Admin dan SGE) -->
+                <button onclick="switchTab('stoksge')" id="tab-stoksge" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
+                    <i data-lucide="package" class="w-5 h-5"></i> Stok & Rugi SGE
                 </button>
             </div>
         </nav>
@@ -413,6 +417,97 @@
                 </div>
             </div>
 
+            <!-- VIEW: STOK & RUGI SGE (KHUSUS ADMIN & SGE) -->
+            <div id="view-stoksge" class="view-section fade-in space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between md:items-end border-b border-slate-200 pb-6 gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-purple-100 p-3 rounded-xl hidden md:block border border-purple-200"><i data-lucide="package" class="w-8 h-8 text-purple-700"></i></div>
+                        <div>
+                            <h2 class="text-3xl font-black text-slate-800">Stok & Kerugian SGE</h2>
+                            <p class="text-slate-500 font-medium">Pantau sisa barang dan catat kerugian akibat barang hilang/tidak dibayar.</p>
+                        </div>
+                    </div>
+                    <div class="bg-rose-50 px-6 py-3 rounded-2xl border border-rose-200 text-right shadow-sm">
+                        <p class="text-[11px] text-rose-700 uppercase font-black tracking-widest">Total Nominal Rugi</p>
+                        <p id="total-sge-rugi" class="text-2xl font-black text-rose-600">Rp 0</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- BAGIAN STOK -->
+                    <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-3">
+                            <i data-lucide="boxes" class="text-purple-600 w-5 h-5"></i> Update Sisa Stok
+                        </h3>
+                        <div class="space-y-4" id="sge-stock-container">
+                            <!-- Rendered by JS -->
+                        </div>
+                        <p class="text-xs text-slate-400 mt-4 text-center">Data stok tersimpan otomatis</p>
+                    </div>
+
+                    <!-- BAGIAN INPUT RUGI -->
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-bold text-rose-700 mb-4 flex items-center gap-2 border-b border-rose-100 pb-3">
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i> Catat Barang Hilang / Belum Dibayar
+                        </h3>
+                        <form id="sge-loss-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Kejadian</label>
+                                    <input type="date" id="loss-date" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Barang</label>
+                                    <select id="loss-item" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold text-slate-700 cursor-pointer">
+                                        <option value="ICE CREAM">ICE CREAM</option>
+                                        <option value="MINUMAN">MINUMAN</option>
+                                        <option value="POP MIE">POP MIE</option>
+                                        <option value="PDH KKN">PDH KKN</option>
+                                        <option value="LAINNYA">LAINNYA</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nominal Rugi (Rp)</label>
+                                    <input type="text" inputmode="numeric" id="loss-nominal" oninput="formatRupiahInput(this)" required placeholder="Misal: 5000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-bold"/>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Keterangan / Pelaku</label>
+                                    <input type="text" id="loss-desc" required placeholder="Misal: Hilang di sekre 2 pcs" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm"/>
+                                </div>
+                            </div>
+                            <button type="submit" id="btn-submit-loss" class="w-full py-3 mt-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] text-sm">
+                                🚨 SIMPAN DATA KERUGIAN
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TABEL RIWAYAT KERUGIAN -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-5 bg-rose-50 border-b border-rose-100 flex justify-between items-center">
+                        <h3 class="font-bold text-rose-800 flex items-center gap-2">
+                            <i data-lucide="list-x" class="w-5 h-5 text-rose-600"></i> Riwayat Kerugian SGE
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-white text-slate-500 text-xs border-b border-slate-200">
+                                    <th class="p-4 font-bold uppercase tracking-wider">Tanggal</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider">Barang</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider">Keterangan</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-right">Nominal Rugi</th>
+                                    <th class="p-4 font-bold uppercase tracking-wider text-center w-20">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loss-table-body" class="divide-y divide-slate-100 text-sm font-medium"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -436,6 +531,8 @@
         
         let currentDataHash = '';
         let currentKasHash = '';
+        let currentSgeStockHash = '';
+        let currentSgeLossesHash = '';
 
         const prokers = ['STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB'];
         const sgeCategories = ['ICE CREAM', 'MINUMAN', 'POP MIE', 'PDH KKN', 'LAINNYA'];
@@ -447,7 +544,7 @@
             'sge': { pass: 'sgeamin', role: 'SGE MARKET HUB' }
         };
 
-        // Data Transaksi & PDH BEM (Khusus Laporan AF)
+        // Data Transaksi & PDH BEM 
         let transactions = []; 
         let editingDbId = null;  
         let pdhBemSold = 0;
@@ -456,6 +553,10 @@
         const kasNames = ['Ozza', 'Azka', 'Alin', 'Niken', 'Michael', 'Samuel', 'Boyjes', 'Alya', 'Aliyah', 'Puty', 'Fairuz', 'Qila', 'Rafi', 'Zaki'];
         const kasMonths = ['Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         let kasData = {};
+
+        // Data SGE Stok & Kerugian
+        let sgeStock = { 'ICE CREAM': 0, 'MINUMAN': 0, 'POP MIE': 0, 'PDH KKN': 0, 'LAINNYA': 0 };
+        let sgeLosses = [];
 
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
@@ -478,22 +579,29 @@
         const today = new Date();
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         document.getElementById('report-month').value = currentMonthString;
+        document.getElementById('input-date').valueAsDate = new Date();
+        
+        // Inisialisasi tanggal form kerugian
+        const lossDateEl = document.getElementById('loss-date');
+        if(lossDateEl) lossDateEl.valueAsDate = new Date();
 
         setTimeout(() => safeCreateIcons(), 500);
 
         // =========================================================================
-        // FETCH DATA MURNI (AMBIL TRANSAKSI, KAS, DAN PDH SEKALIGUS)
+        // FETCH DATA MURNI (AMBIL 5 DATA SEKALIGUS)
         // =========================================================================
         window.fetchDatabase = async function() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // Tembak 3 Endpoint secara bersamaan (Transaksi, Kas CE, dan PDH BEM)
-                const [resTx, resKas, resPdh] = await Promise.all([
+                // Tembak 5 Endpoint secara bersamaan
+                const [resTx, resKas, resPdh, resSgeStock, resSgeLosses] = await Promise.all([
                     fetch(`${RTDB_URL}/transactions.json`),
                     fetch(`${RTDB_URL}/kas_ce.json`),
-                    fetch(`${RTDB_URL}/pdh_bem.json`)
+                    fetch(`${RTDB_URL}/pdh_bem.json`),
+                    fetch(`${RTDB_URL}/sge_stock.json`),
+                    fetch(`${RTDB_URL}/sge_losses.json`)
                 ]);
                 
                 // 1. Parsing Data Transaksi
@@ -522,11 +630,37 @@
                     }
                 }
 
-                // 3. Parsing Data PDH BEM (Khusus Admin Laporan AF)
+                // 3. Parsing Data PDH BEM
                 if (resPdh.ok) {
                     const dataPdh = await resPdh.json();
                     if(dataPdh && dataPdh.sold !== undefined) {
                         pdhBemSold = dataPdh.sold;
+                    }
+                }
+
+                // 4. Parsing Data Stok SGE
+                if (resSgeStock.ok) {
+                    const dataStock = await resSgeStock.json();
+                    const newStockHash = JSON.stringify(dataStock);
+                    if (newStockHash !== currentSgeStockHash) {
+                        sgeStock = dataStock || { 'ICE CREAM': 0, 'MINUMAN': 0, 'POP MIE': 0, 'PDH KKN': 0, 'LAINNYA': 0 };
+                        currentSgeStockHash = newStockHash;
+                    }
+                }
+
+                // 5. Parsing Data Kerugian SGE
+                if (resSgeLosses.ok) {
+                    const dataLosses = await resSgeLosses.json();
+                    let fetchedLosses = [];
+                    if (dataLosses) {
+                        for (let key in dataLosses) {
+                            fetchedLosses.push({ dbId: key, ...dataLosses[key] });
+                        }
+                    }
+                    const newLossHash = JSON.stringify(fetchedLosses);
+                    if (newLossHash !== currentSgeLossesHash) {
+                        sgeLosses = fetchedLosses;
+                        currentSgeLossesHash = newLossHash;
                     }
                 }
 
@@ -595,14 +729,27 @@
                 document.getElementById('tab-dashboard').classList.remove('hidden');
                 document.getElementById('tab-laporan').classList.remove('hidden'); 
                 document.getElementById('tab-kasce').classList.remove('hidden'); 
+                document.getElementById('tab-stoksge').classList.remove('hidden'); 
                 document.getElementById('dashboard-charts-container').classList.remove('hidden'); 
                 document.getElementById('proker-selector-container').classList.remove('hidden');
                 document.getElementById('filter-proker-riwayat').classList.remove('hidden');
                 window.switchTab('dashboard');
+            } else if (role === 'SGE MARKET HUB') {
+                document.getElementById('tab-dashboard').classList.add('hidden');
+                document.getElementById('tab-laporan').classList.add('hidden'); 
+                document.getElementById('tab-kasce').classList.add('hidden'); 
+                document.getElementById('tab-stoksge').classList.remove('hidden'); 
+                document.getElementById('dashboard-charts-container').classList.add('hidden'); 
+                document.getElementById('proker-selector-container').classList.add('hidden');
+                document.getElementById('filter-proker-riwayat').classList.add('hidden');
+                document.getElementById('filter-proker-riwayat').value = 'SEMUA';
+                document.getElementById('input-proker').value = role;
+                window.switchTab('input');
             } else {
                 document.getElementById('tab-dashboard').classList.add('hidden');
                 document.getElementById('tab-laporan').classList.add('hidden'); 
                 document.getElementById('tab-kasce').classList.add('hidden'); 
+                document.getElementById('tab-stoksge').classList.add('hidden'); 
                 document.getElementById('dashboard-charts-container').classList.add('hidden'); 
                 document.getElementById('proker-selector-container').classList.add('hidden');
                 document.getElementById('filter-proker-riwayat').classList.add('hidden');
@@ -636,15 +783,137 @@
                 try { renderLaporanAF(); } catch(e) {}
                 try { renderKasTable(); } catch(e) {}
             }
+            if (currentUser === 'GLOBAL' || currentUser === 'SGE MARKET HUB') {
+                try { renderSgeStock(); } catch(e) {}
+            }
             try { renderRiwayat(); } catch(e) {}
             safeCreateIcons();
         }
 
         function updateHeaderNetto() {
-            // Ubah ini agar SELALU menampilkan saldo keseluruhan CE, tidak peduli siapa yang login
             const inTotal = transactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const outTotal = transactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             document.getElementById('global-netto').innerText = formatRp(inTotal - outTotal);
+        }
+
+        // =========================================================================
+        // FITUR BARU: STOK & KERUGIAN SGE
+        // =========================================================================
+        window.updateStockVal = async function(cat, val) {
+            let num = parseInt(val) || 0;
+            if (num < 0) num = 0;
+            
+            sgeStock[cat] = num;
+            try {
+                await fetch(`${RTDB_URL}/sge_stock.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [cat]: num })
+                });
+            } catch(e) {
+                console.error("Gagal update stok", e);
+            }
+        }
+
+        function renderSgeStock() {
+            let totalLoss = sgeLosses.reduce((sum, item) => sum + item.nominal, 0);
+            document.getElementById('total-sge-rugi').innerText = formatRp(totalLoss);
+
+            // Render Kartu Input Stok
+            let stockHTML = '';
+            sgeCategories.forEach(cat => {
+                let currentVal = sgeStock[cat] || 0;
+                stockHTML += `
+                    <div class="flex items-center justify-between bg-purple-50/50 p-3 rounded-xl border border-purple-100 hover:border-purple-300 transition-colors">
+                        <span class="text-sm font-bold text-slate-700">${cat}</span>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="0" value="${currentVal}" onchange="updateStockVal('${cat}', this.value)" class="w-20 p-2 text-center font-black text-purple-700 bg-white border border-purple-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition-all">
+                            <span class="text-xs text-slate-500 font-bold uppercase">Pcs</span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('sge-stock-container').innerHTML = stockHTML;
+
+            // Render Tabel Kerugian
+            let lossHTML = '';
+            if (sgeLosses.length === 0) {
+                lossHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">Belum ada catatan kehilangan atau nunggak. Aman! 🎉</td></tr>`;
+            } else {
+                const sortedLosses = [...sgeLosses].sort((a,b) => b.createdAt - a.createdAt);
+                sortedLosses.forEach(l => {
+                    lossHTML += `
+                        <tr class="hover:bg-rose-50/50 transition-colors">
+                            <td class="p-4 text-sm text-slate-500">${l.date}</td>
+                            <td class="p-4"><span class="bg-rose-100 text-rose-700 border border-rose-200 px-2 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">${l.item}</span></td>
+                            <td class="p-4 text-sm text-slate-700 font-medium">${l.desc}</td>
+                            <td class="p-4 text-right font-black text-rose-600">${formatRp(l.nominal)}</td>
+                            <td class="p-4 text-center">
+                                <button onclick="deleteSgeLoss('${l.dbId}')" class="p-2 bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 rounded-lg shadow-sm transition-all">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('loss-table-body').innerHTML = lossHTML;
+        }
+
+        document.getElementById('sge-loss-form')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const nominalInput = document.getElementById('loss-nominal');
+            const nominalVal = parseInt(nominalInput.value.replace(/[^0-9]/g, ''));
+            
+            if(!nominalVal || nominalVal === 0) {
+                alert('Nominal kerugian harus diisi dengan benar!');
+                return;
+            }
+
+            const data = {
+                date: document.getElementById('loss-date').value,
+                item: document.getElementById('loss-item').value,
+                nominal: nominalVal,
+                desc: document.getElementById('loss-desc').value,
+                createdAt: Date.now()
+            };
+
+            const btn = document.getElementById('btn-submit-loss');
+            btn.innerHTML = '⏳ MENYIMPAN...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${RTDB_URL}/sge_losses.json`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if(!response.ok) throw new Error("Gagal simpan");
+                
+                nominalInput.value = '';
+                document.getElementById('loss-desc').value = '';
+                document.getElementById('loss-date').valueAsDate = new Date();
+                
+                await fetchDatabase();
+                alert('✅ Data kerugian berhasil dicatat ke sistem.');
+            } catch(error) {
+                alert('❌ Gagal menyimpan data kerugian. Pastikan internet menyala.');
+            } finally {
+                btn.innerHTML = '🚨 SIMPAN DATA KERUGIAN';
+                btn.disabled = false;
+            }
+        });
+
+        window.deleteSgeLoss = async function(dbId) {
+            if(confirm('Yakin ingin menghapus catatan kerugian ini?')) {
+                try {
+                    await fetch(`${RTDB_URL}/sge_losses/${dbId}.json`, { method: 'DELETE' });
+                    fetchDatabase();
+                } catch(e) {
+                    alert('Gagal menghapus data.');
+                }
+            }
         }
 
         // =========================================================================
@@ -653,7 +922,7 @@
         window.updatePdhBem = async function(val) {
             let sold = parseInt(val) || 0;
             if (sold < 0) sold = 0;
-            if (sold > 146) sold = 146; // Maksimal 146
+            if (sold > 146) sold = 146; 
             
             document.getElementById('input-pdh-sold').value = sold;
             pdhBemSold = sold;
@@ -664,7 +933,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sold: sold })
                 });
-                renderLaporanAF(); // Refresh UI langsung
+                renderLaporanAF(); 
             } catch(e) {
                 console.error(e);
                 alert("❌ Gagal menyimpan data PDH BEM. Cek internetmu!");
@@ -751,7 +1020,9 @@
         }
 
 
-        // (Kode Render Dashboard, Laporan, Riwayat dll)
+        // =========================================================================
+        // DASHBOARD, LAPORAN, RIWAYAT
+        // =========================================================================
         let barChartObj = null;
         let pieChartObj = null;
 
@@ -877,7 +1148,7 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
-            // FILKOMMERCH (100% Hak CE)
+            // FILKOMMERCH 
             const merchTx = filteredTx.filter(t => t.proker === 'FILKOMMERCH');
             const merchIn = merchTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const merchOut = merchTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
@@ -885,18 +1156,16 @@
             const merchAfShare = 0; 
             const merchCeShare = merchNet;
 
-            // Kalkulasi PDH BEM Khusus Admin
+            // PDH BEM 
             const pdhOmset = pdhBemSold * 240000;
             const pdhModal = pdhBemSold * 220000;
             const pdhNet = pdhOmset - pdhModal;
             const pdhShare = pdhNet > 0 ? pdhNet * 0.5 : 0;
 
-            // GRAND TOTAL KESELURUHAN
             const grandTotalBersih = sgeNet + stratNet + merchNet + pdhNet;
             const grandTotalSetorAF = sgeAfShare + stratAfShare + merchAfShare + pdhShare;
             const grandTotalPorsiCE = sgeCeShare + stratCeShare + merchCeShare + pdhShare;
 
-            // RENDER BANGER GRAND TOTAL
             document.getElementById('af-grand-total').innerHTML = `
                 <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 opacity-10"><i data-lucide="pie-chart" class="w-48 h-48"></i></div>
@@ -922,7 +1191,6 @@
                 </div>
             `;
 
-            // RENDER KARTU-KARTU PROKER
             document.getElementById('af-summary-cards').innerHTML = `
                 <!-- KARTU SGE -->
                 <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
@@ -1100,7 +1368,6 @@
             let tbodyHTML = '';
             let filteredTx = transactions;
 
-            // Logika Filter Per Proker untuk Admin
             if (currentUser !== 'GLOBAL') {
                 filteredTx = transactions.filter(t => t.proker === currentUser);
             } else {
@@ -1112,7 +1379,6 @@
 
             const visibleTransactions = filteredTx;
 
-            // Hitung Summary Berdasarkan Filter yang Aktif
             const sumIn = visibleTransactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const sumOut = visibleTransactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const sumBal = sumIn - sumOut;
@@ -1121,7 +1387,6 @@
             document.getElementById('riwayat-sum-out').innerText = formatRp(sumOut);
             document.getElementById('riwayat-sum-balance').innerText = formatRp(sumBal);
             
-            // Tampilkan kartu summary jika bukan GLOBAL atau jika filter sedang aktif
             const summaryContainer = document.getElementById('riwayat-summary');
             if (summaryContainer) {
                 summaryContainer.classList.remove('hidden');
@@ -1169,8 +1434,6 @@
             
             document.getElementById('history-table-body').innerHTML = tbodyHTML;
         }
-
-        document.getElementById('input-date').valueAsDate = new Date();
 
         window.toggleSGEDropdown = function() {
             const proker = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -1333,7 +1596,11 @@
 
         window.switchTab = function(tabId) {
             if (currentUser !== 'GLOBAL' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce')) {
-                tabId = 'input';
+                if (currentUser === 'SGE MARKET HUB' && tabId === 'stoksge') {
+                    // Allowed
+                } else {
+                    tabId = 'input';
+                }
             }
 
             if (tabId !== 'input' && editingDbId) {
@@ -1364,7 +1631,8 @@
 
             if(tabId === 'laporan') renderLaporanAF();
             if(tabId === 'kasce') renderKasTable();
-            if(tabId === 'riwayat') renderRiwayat(); // Paksa render ulang agar summary ter-update
+            if(tabId === 'stoksge') renderSgeStock();
+            if(tabId === 'riwayat') renderRiwayat(); 
         }
 
     </script>
