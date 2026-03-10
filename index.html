@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=sge_inventory_kiya_111';
+        const currentVersion = 'v=laporan_af_no_merch_112';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -1313,7 +1313,8 @@
             const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
             document.getElementById('af-table-month-label').innerText = `Bulan: ${prettyMonth}`;
 
-            const filteredTx = transactions.filter(t => t.date.startsWith(monthVal));
+            // Sembunyikan transaksi FILKOMMERCH dari Laporan AF karena 100% milik CE
+            const filteredTx = transactions.filter(t => t.date.startsWith(monthVal) && t.proker !== 'FILKOMMERCH');
 
             // SGE MARKET HUB
             const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
@@ -1331,23 +1332,15 @@
             const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
             const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
 
-            // FILKOMMERCH 
-            const merchTx = filteredTx.filter(t => t.proker === 'FILKOMMERCH');
-            const merchIn = merchTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-            const merchOut = merchTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
-            const merchNet = merchIn - merchOut;
-            const merchAfShare = 0; 
-            const merchCeShare = merchNet;
-
             // PDH BEM 
             const pdhOmset = pdhBemSold * 240000;
             const pdhModal = pdhBemSold * 220000;
             const pdhNet = pdhOmset - pdhModal;
             const pdhShare = pdhNet > 0 ? pdhNet * 0.5 : 0;
 
-            const grandTotalBersih = sgeNet + stratNet + merchNet + pdhNet;
-            const grandTotalSetorAF = sgeAfShare + stratAfShare + merchAfShare + pdhShare;
-            const grandTotalPorsiCE = sgeCeShare + stratCeShare + merchCeShare + pdhShare;
+            const grandTotalBersih = sgeNet + stratNet + pdhNet;
+            const grandTotalSetorAF = sgeAfShare + stratAfShare + pdhShare;
+            const grandTotalPorsiCE = sgeCeShare + stratCeShare + pdhShare;
 
             document.getElementById('af-grand-total').innerHTML = `
                 <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
@@ -1429,35 +1422,6 @@
                         <div class="flex justify-between items-center pt-1">
                             <span class="text-sm font-black text-cyan-600 uppercase tracking-wide">Setor ke AF</span>
                             <span class="font-black text-cyan-600 text-2xl">${formatRp(stratAfShare)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-br from-pink-50 to-white rounded-3xl p-8 border border-pink-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shopping-bag" class="w-24 h-24 text-pink-900"></i></div>
-                    <div class="flex items-center justify-between mb-6 relative z-10">
-                        <h3 class="font-black text-pink-900 text-xl">FILKOMMERCH</h3>
-                        <span class="bg-pink-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% Hak CE</span>
-                    </div>
-                    <div class="space-y-2 mb-6 relative z-10">
-                        <div class="flex justify-between text-sm font-medium text-slate-600">
-                            <span>Pemasukan Kotor</span> <span class="text-emerald-600 font-bold">${formatRp(merchIn)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm font-medium text-slate-600 pb-3 border-b border-pink-100">
-                            <span>Pengeluaran Operasional</span> <span class="text-rose-500 font-bold">-${formatRp(merchOut)}</span>
-                        </div>
-                        <div class="flex justify-between text-lg font-black text-slate-800 pt-1">
-                            <span>Laba Bersih</span> <span>${formatRp(merchNet)}</span>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-5 border border-pink-100 shadow-sm space-y-2 relative z-10">
-                        <div class="flex justify-between items-center pb-1">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (100%)</span>
-                            <span class="font-bold text-pink-600 text-xl">${formatRp(merchCeShare)}</span>
-                        </div>
-                        <div class="flex justify-between items-center pt-2 border-t border-slate-50">
-                            <span class="text-xs font-black text-slate-400 uppercase tracking-wide">Setor ke AF</span>
-                            <span class="font-black text-slate-400 text-lg">Rp 0</span>
                         </div>
                     </div>
                 </div>
