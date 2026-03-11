@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=sge_rekap_sales_loss_114';
+        const currentVersion = 'v=fix_denda_hilang_115';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -145,11 +145,9 @@
                 <button onclick="switchTab('kasce')" id="tab-kasce" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="wallet" class="w-5 h-5"></i> Uang Kas CE
                 </button>
-                <!-- MENU: STOK & RUGI SGE -->
                 <button onclick="switchTab('stoksge')" id="tab-stoksge" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="package" class="w-5 h-5"></i> Stok SGE
                 </button>
-                <!-- MENU BARU: REKAP SGE -->
                 <button onclick="switchTab('rekapsge')" id="tab-rekapsge" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Rekap SGE
                 </button>
@@ -858,6 +856,40 @@
             if(fd) fd.valueAsDate = new Date();
         };
 
+        // KALKULATOR RUGI OTOMATIS DI FORM STOK
+        window.calculateNominalStock = function() {
+            const type = document.getElementById('stock-type').value;
+            const container = document.getElementById('nominal-display-container');
+            const label = document.getElementById('nominal-display-label');
+            const box = document.getElementById('nominal-display-box');
+            const text = document.getElementById('nominal-display-value');
+            const hiddenInput = document.getElementById('hidden-calculated-nominal');
+
+            if (type === 'keluar' || type === 'hilang') {
+                const item = document.getElementById('stock-item').value;
+                const qty = parseInt(document.getElementById('stock-qty').value) || 0;
+                const price = sgeItemPrices[item] || 0;
+                const total = qty * price;
+
+                container.classList.remove('hidden');
+                text.innerText = formatRp(total);
+                hiddenInput.value = total;
+
+                if (type === 'keluar') {
+                    label.innerText = 'Estimasi Pendapatan (Rp)';
+                    label.className = 'block text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1';
+                    box.className = 'w-full p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-black text-sm flex items-center shadow-inner';
+                } else {
+                    label.innerText = 'Total Kerugian (Rp)';
+                    label.className = 'block text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1';
+                    box.className = 'w-full p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 font-black text-sm flex items-center shadow-inner';
+                }
+            } else {
+                container.classList.add('hidden');
+                hiddenInput.value = 0;
+            }
+        };
+
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
@@ -1063,7 +1095,123 @@
         }
 
         // =========================================================================
-        // FITUR BARU: MANAJEMEN STOK SGE (LEDGER BASED) MOCKUP KIYA
+        // FITUR BARU: MANAJEMEN DENDA (KAS CE)
+        // =========================================================================
+
+        document.getElementById('fine-form')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-fine');
+            const name = document.getElementById('fine-name').value;
+            const nominal = getCleanNominal('fine-nominal');
+
+            if(!name) return alert('Pilih nama pelanggar dulu!');
+            if(nominal <= 0) return alert('Nominal harus lebih dari 0!');
+
+            const data = {
+                name: name,
+                date: document.getElementById('fine-date').value,
+                nominal: nominal,
+                reason: document.getElementById('fine-reason').value,
+                isPaid: false,
+                createdAt: Date.now()
+            };
+
+            btn.innerHTML = '⏳ MENYIMPAN...';
+            btn.disabled = true;
+
+            try {
+                await fetchWithTimeout(`${RTDB_URL}/ce_fines.json`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                document.getElementById('fine-nominal').value = '';
+                document.getElementById('fine-reason').value = '';
+                document.getElementById('fine-name').selectedIndex = 0;
+                
+                await fetchDatabase();
+                alert('✅ Catatan denda berhasil ditambahkan!');
+            } catch(e) {
+                alert('❌ Gagal menyimpan denda. Pastikan internet stabil.');
+            } finally {
+                btn.innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> TAMBAH DENDA';
+                btn.disabled = false;
+                safeCreateIcons();
+            }
+        });
+
+        window.toggleFineStatus = async function(dbId, currentIsPaid) {
+            try {
+                await fetchWithTimeout(`${RTDB_URL}/ce_fines/${dbId}.json`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ isPaid: !currentIsPaid })
+                });
+                fetchDatabase();
+            } catch(e) {
+                alert('Gagal mengubah status denda.');
+            }
+        }
+
+        window.deleteFine = async function(dbId) {
+            if(confirm('Hapus data denda ini?')) {
+                try {
+                    await fetchWithTimeout(`${RTDB_URL}/ce_fines/${dbId}.json`, { method: 'DELETE' });
+                    fetchDatabase();
+                } catch(e) {
+                    alert('Gagal hapus.');
+                }
+            }
+        }
+
+        window.renderFines = function() {
+            let fineHTML = '';
+            let totalUnpaid = 0;
+            let totalPaid = 0;
+
+            const sortedFines = [...ceFines].sort((a,b) => b.createdAt - a.createdAt);
+
+            if(sortedFines.length === 0) {
+                fineHTML = '<tr><td colspan="6" class="text-center p-6 text-slate-400 text-sm">Alhamdulillah belum ada yang didenda! 🎉</td></tr>';
+            } else {
+                sortedFines.forEach(f => {
+                    if(f.isPaid) totalPaid += f.nominal;
+                    else totalUnpaid += f.nominal;
+
+                    const statusBadge = f.isPaid
+                        ? `<button onclick="toggleFineStatus('${f.dbId}', true)" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold hover:bg-emerald-200 transition-colors shadow-sm">✅ LUNAS</button>`
+                        : `<button onclick="toggleFineStatus('${f.dbId}', false)" class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-xs font-bold hover:bg-rose-200 transition-colors shadow-sm">⏳ BELUM</button>`;
+
+                    fineHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                            <td class="p-3 text-xs text-slate-500">${f.date}</td>
+                            <td class="p-3 font-bold text-slate-700 text-sm">${f.name}</td>
+                            <td class="p-3 text-xs text-slate-600 truncate max-w-[150px]">${f.reason}</td>
+                            <td class="p-3 font-black text-rose-600 text-sm">${formatRp(f.nominal)}</td>
+                            <td class="p-3 text-center">${statusBadge}</td>
+                            <td class="p-3 text-center">
+                                <button onclick="deleteFine('${f.dbId}')" class="text-slate-400 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            const tbody = document.getElementById('fines-tbody');
+            if(tbody) tbody.innerHTML = fineHTML;
+            
+            const uFines = document.getElementById('total-unpaid-fines');
+            if(uFines) uFines.innerText = formatRp(totalUnpaid);
+            
+            const pFines = document.getElementById('total-paid-fines');
+            if(pFines) pFines.innerText = formatRp(totalPaid);
+            
+            safeCreateIcons();
+        }
+
+        // =========================================================================
+        // MANAJEMEN STOK SGE (LEDGER BASED) MOCKUP KIYA
         // =========================================================================
         
         window.setStockType = function(type) {
@@ -1087,40 +1235,6 @@
             window.calculateNominalStock();
         }
 
-        window.calculateNominalStock = function() {
-            const type = document.getElementById('stock-type').value;
-            const container = document.getElementById('nominal-display-container');
-            const label = document.getElementById('nominal-display-label');
-            const box = document.getElementById('nominal-display-box');
-            const text = document.getElementById('nominal-display-value');
-            const hiddenInput = document.getElementById('hidden-calculated-nominal');
-
-            if (type === 'keluar' || type === 'hilang') {
-                const item = document.getElementById('stock-item').value;
-                const qty = parseInt(document.getElementById('stock-qty').value) || 0;
-                const price = sgeItemPrices[item] || 0;
-                const total = qty * price;
-
-                container.classList.remove('hidden');
-                text.innerText = formatRp(total);
-                hiddenInput.value = total;
-
-                if (type === 'keluar') {
-                    label.innerText = 'Estimasi Pendapatan (Rp)';
-                    label.className = 'block text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1';
-                    box.className = 'w-full p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-black text-sm flex items-center shadow-inner';
-                } else {
-                    label.innerText = 'Total Kerugian (Rp)';
-                    label.className = 'block text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1';
-                    box.className = 'w-full p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 font-black text-sm flex items-center shadow-inner';
-                }
-            } else {
-                container.classList.add('hidden');
-                hiddenInput.value = 0;
-            }
-        };
-
-        // Simpan Mutasi Gabungan (Masuk/Keluar/Hilang)
         document.getElementById('stock-ledger-form')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1395,7 +1509,9 @@
         function renderKasTable() {
             let totalKasTerkumpul = 0;
             let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
-            kasMonths.forEach(m => thead += `<th class="p-3 text-center text-xs font-black text-slate-500 uppercase tracking-wider w-32 min-w-[120px]">${m}</th>`);
+            kasMonths.forEach(m => {
+                thead += `<th class="p-3 text-center text-xs font-black text-slate-500 uppercase tracking-wider w-32 min-w-[120px]">${m}</th>`;
+            });
             thead += `</tr>`;
 
             let tbody = '';
@@ -1429,12 +1545,14 @@
             document.getElementById('kas-thead').innerHTML = thead;
             document.getElementById('kas-tbody').innerHTML = tbody;
 
+            // Render form dan tabel denda terlebih dahulu supaya bisa dihitung
+            if (typeof window.renderFines === 'function') {
+                window.renderFines();
+            }
+
             // Update Total Kas Terkumpul + Total Denda Lunas
             let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
             document.getElementById('total-kas-terkumpul').innerText = formatRp(totalKasTerkumpul + totalDendaTerbayar);
-
-            // Render form dan tabel denda
-            renderFines();
         }
 
         window.updateKas = async function(selectElement, name, month) {
