@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=fix_denda_hilang_115';
+        const currentVersion = 'v=total_saldo_include_kas_116';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -1091,7 +1091,19 @@
         function updateHeaderNetto() {
             const inTotal = transactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const outTotal = transactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
-            document.getElementById('global-netto').innerText = formatRp(inTotal - outTotal);
+            
+            // Hitung total dari Uang Kas CE (Iuran Bulanan + Denda Lunas)
+            let totalKasBulanan = 0;
+            for (const n in kasData) {
+                for (const m in kasData[n]) {
+                    totalKasBulanan += parseInt(kasData[n][m] || 0);
+                }
+            }
+            const totalDendaLunas = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
+
+            // Total Keseluruhan = Saldo Transaksi Proker + Uang Kas CE
+            const totalSaldoCE = (inTotal - outTotal) + totalKasBulanan + totalDendaLunas;
+            document.getElementById('global-netto').innerText = formatRp(totalSaldoCE);
         }
 
         // =========================================================================
@@ -1581,6 +1593,7 @@
                 
                 let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
                 document.getElementById('total-kas-terkumpul').innerText = formatRp(total + totalDendaTerbayar);
+                updateHeaderNetto(); // Update saldo CE di header secara realtime
 
             } catch(e) {
                 alert(`❌ Gagal menyimpan status kas.`);
