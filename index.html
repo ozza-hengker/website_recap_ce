@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=total_saldo_include_kas_116';
+        const currentVersion = 'v=fix_firebase_rules_117';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -893,7 +893,7 @@
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI DENGAN TIMEOUT
+        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING (UPDATE 117)
         // =========================================================================
         async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
             const controller = new AbortController();
@@ -913,7 +913,6 @@
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // Tembak 5 Endpoint secara bersamaan
                 const [resTx, resKas, resPdh, resLedger, resFines] = await Promise.all([
                     fetchWithTimeout(`${RTDB_URL}/transactions.json`),
                     fetchWithTimeout(`${RTDB_URL}/kas_ce.json`),
@@ -922,6 +921,11 @@
                     fetchWithTimeout(`${RTDB_URL}/ce_fines.json`)
                 ]);
                 
+                // CEK APAKAH DITOLAK FIREBASE (KARENA RULES 30 HARI HABIS)
+                if (!resTx.ok || resTx.status === 401 || resTx.status === 403) {
+                    throw new Error("Akses Ditolak Firebase (Rules Expired)");
+                }
+
                 if (resTx.ok) {
                     const dataTx = await resTx.json();
                     let fetchedTxs = [];
@@ -981,7 +985,7 @@
                 console.error("Fetch DB Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Terputus';
+                    dbStatusEl.innerHTML = '❌ Akses Ditolak (Rules)';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
@@ -1557,12 +1561,10 @@
             document.getElementById('kas-thead').innerHTML = thead;
             document.getElementById('kas-tbody').innerHTML = tbody;
 
-            // Render form dan tabel denda terlebih dahulu supaya bisa dihitung
             if (typeof window.renderFines === 'function') {
                 window.renderFines();
             }
 
-            // Update Total Kas Terkumpul + Total Denda Lunas
             let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
             document.getElementById('total-kas-terkumpul').innerText = formatRp(totalKasTerkumpul + totalDendaTerbayar);
         }
@@ -1593,7 +1595,7 @@
                 
                 let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
                 document.getElementById('total-kas-terkumpul').innerText = formatRp(total + totalDendaTerbayar);
-                updateHeaderNetto(); // Update saldo CE di header secara realtime
+                updateHeaderNetto(); 
 
             } catch(e) {
                 alert(`❌ Gagal menyimpan status kas.`);
@@ -1698,7 +1700,6 @@
             const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
             document.getElementById('af-table-month-label').innerText = `Bulan: ${prettyMonth}`;
 
-            // Sembunyikan transaksi FILKOMMERCH dari Laporan AF karena 100% milik CE
             const filteredTx = transactions.filter(t => t.date.startsWith(monthVal) && t.proker !== 'FILKOMMERCH');
 
             // SGE MARKET HUB
