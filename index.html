@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=fix_firebase_rules_117';
+        const currentVersion = 'v=tambah_user_af_118';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -116,7 +116,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                    <div class="bg-teal-900/50 px-5 py-2 rounded-xl border border-teal-600/50 text-right shadow-inner">
+                    <div id="header-netto-container" class="bg-teal-900/50 px-5 py-2 rounded-xl border border-teal-600/50 text-right shadow-inner">
                         <p id="header-netto-label" class="text-[10px] text-teal-200 uppercase font-bold tracking-widest">Total Saldo CE</p>
                         <p id="global-netto" class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-100">Rp 0</p>
                     </div>
@@ -324,7 +324,7 @@
                                     <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Keterangan</th>
                                     <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Debit (Masuk)</th>
                                     <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Kredit (Keluar)</th>
-                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center no-print w-24">Aksi</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center no-print w-24 action-col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="history-table-body" class="divide-y divide-slate-100">
@@ -783,7 +783,8 @@
             'admin': { pass: 'admince', role: 'GLOBAL' },
             'strategic': { pass: 'strategicyes', role: 'STRATEGIC PARTNERSHIP' },
             'merch': { pass: 'merchlaku', role: 'FILKOMMERCH' },
-            'sge': { pass: 'sgeamin', role: 'SGE MARKET HUB' }
+            'sge': { pass: 'sgeamin', role: 'SGE MARKET HUB' },
+            'af': { pass: 'afbem', role: 'AF' } 
         };
 
         let transactions = []; 
@@ -893,7 +894,7 @@
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING (UPDATE 117)
+        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING 
         // =========================================================================
         async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
             const controller = new AbortController();
@@ -921,7 +922,6 @@
                     fetchWithTimeout(`${RTDB_URL}/ce_fines.json`)
                 ]);
                 
-                // CEK APAKAH DITOLAK FIREBASE (KARENA RULES 30 HARI HABIS)
                 if (!resTx.ok || resTx.status === 401 || resTx.status === 403) {
                     throw new Error("Akses Ditolak Firebase (Rules Expired)");
                 }
@@ -1023,12 +1023,20 @@
             currentUser = role;
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('user-role-text').innerText = role === 'GLOBAL' ? 'Vice Chief (Global)' : 'PJ ' + role;
+            
+            if (role === 'GLOBAL') {
+                document.getElementById('user-role-text').innerText = 'Vice Chief (Global)';
+            } else if (role === 'AF') {
+                document.getElementById('user-role-text').innerText = 'Admin AF (Pemantau)';
+            } else {
+                document.getElementById('user-role-text').innerText = 'PJ ' + role;
+            }
             
             updateUI();
 
             if(role === 'GLOBAL') {
                 document.getElementById('tab-dashboard').classList.remove('hidden');
+                document.getElementById('tab-input').classList.remove('hidden');
                 document.getElementById('tab-laporan').classList.remove('hidden'); 
                 document.getElementById('tab-kasce').classList.remove('hidden'); 
                 document.getElementById('tab-stoksge').classList.remove('hidden'); 
@@ -1037,8 +1045,21 @@
                 document.getElementById('proker-selector-container').classList.remove('hidden');
                 document.getElementById('filter-proker-riwayat').classList.remove('hidden');
                 window.switchTab('dashboard');
+            } else if (role === 'AF') {
+                document.getElementById('tab-dashboard').classList.remove('hidden');
+                document.getElementById('tab-input').classList.add('hidden');
+                document.getElementById('tab-laporan').classList.remove('hidden'); 
+                document.getElementById('tab-kasce').classList.add('hidden'); 
+                document.getElementById('tab-stoksge').classList.add('hidden'); 
+                document.getElementById('tab-rekapsge').classList.add('hidden'); 
+                document.getElementById('dashboard-charts-container').classList.remove('hidden'); 
+                document.getElementById('proker-selector-container').classList.add('hidden');
+                document.getElementById('filter-proker-riwayat').classList.remove('hidden');
+                document.getElementById('filter-proker-riwayat').value = 'SEMUA';
+                window.switchTab('laporan');
             } else if (role === 'SGE MARKET HUB') {
                 document.getElementById('tab-dashboard').classList.add('hidden');
+                document.getElementById('tab-input').classList.remove('hidden');
                 document.getElementById('tab-laporan').classList.add('hidden'); 
                 document.getElementById('tab-kasce').classList.add('hidden'); 
                 document.getElementById('tab-stoksge').classList.remove('hidden'); 
@@ -1051,6 +1072,7 @@
                 window.switchTab('input');
             } else {
                 document.getElementById('tab-dashboard').classList.add('hidden');
+                document.getElementById('tab-input').classList.remove('hidden');
                 document.getElementById('tab-laporan').classList.add('hidden'); 
                 document.getElementById('tab-kasce').classList.add('hidden'); 
                 document.getElementById('tab-stoksge').classList.add('hidden'); 
@@ -1084,6 +1106,10 @@
                 try { renderLaporanAF(); } catch(e) {}
                 try { renderKasTable(); } catch(e) {}
             }
+            if (currentUser === 'AF') {
+                try { renderDashboard(); } catch(e) {}
+                try { renderLaporanAF(); } catch(e) {}
+            }
             if (currentUser === 'GLOBAL' || currentUser === 'SGE MARKET HUB') {
                 try { renderSgeStockTab(); } catch(e) {}
                 try { renderRekapSge(); } catch(e) {}
@@ -1093,10 +1119,17 @@
         }
 
         function updateHeaderNetto() {
+            if (currentUser === 'AF') {
+                // Sembunyikan Box Total Saldo CE agar AF tidak melihat kas internal
+                document.getElementById('header-netto-container').classList.add('hidden');
+                return;
+            } else {
+                document.getElementById('header-netto-container').classList.remove('hidden');
+            }
+
             const inTotal = transactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const outTotal = transactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             
-            // Hitung total dari Uang Kas CE (Iuran Bulanan + Denda Lunas)
             let totalKasBulanan = 0;
             for (const n in kasData) {
                 for (const m in kasData[n]) {
@@ -1105,13 +1138,12 @@
             }
             const totalDendaLunas = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
 
-            // Total Keseluruhan = Saldo Transaksi Proker + Uang Kas CE
             const totalSaldoCE = (inTotal - outTotal) + totalKasBulanan + totalDendaLunas;
             document.getElementById('global-netto').innerText = formatRp(totalSaldoCE);
         }
 
         // =========================================================================
-        // FITUR BARU: MANAJEMEN DENDA (KAS CE)
+        // FITUR DENDA (KAS CE)
         // =========================================================================
 
         document.getElementById('fine-form')?.addEventListener('submit', async function(e) {
@@ -1650,7 +1682,7 @@
             document.getElementById('global-in').innerText = formatRp(totalIn);
             document.getElementById('global-out').innerText = formatRp(totalOut);
 
-            if(currentUser !== 'GLOBAL') return;
+            if(currentUser !== 'GLOBAL' && currentUser !== 'AF') return;
 
             if (typeof Chart === 'undefined') {
                 document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold border border-dashed border-slate-300">Grafik tidak dapat ditampilkan. Fitur simpan dan tabel data 100% AMAN.</div>';
@@ -1700,6 +1732,7 @@
             const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
             document.getElementById('af-table-month-label').innerText = `Bulan: ${prettyMonth}`;
 
+            // Sembunyikan transaksi FILKOMMERCH dari Laporan AF karena 100% milik CE
             const filteredTx = transactions.filter(t => t.date.startsWith(monthVal) && t.proker !== 'FILKOMMERCH');
 
             // SGE MARKET HUB
@@ -1816,14 +1849,17 @@
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shirt" class="w-24 h-24 text-indigo-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
-                            PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Khusus Admin</span>
+                            PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Khusus Admin ${currentUser === 'GLOBAL' ? '(Edit)' : ''}</span>
                         </h3>
                         <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
                     </div>
                     <div class="flex flex-col justify-center relative z-10 mb-4">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total PDH Terjual (Max 146)</label>
                         <div class="flex items-center gap-3">
-                            <input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" max="146" onchange="updatePdhBem(this.value)" class="w-20 p-2 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-black text-lg text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">
+                            ${currentUser === 'GLOBAL' 
+                                ? `<input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" max="146" onchange="updatePdhBem(this.value)" class="w-20 p-2 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-black text-lg text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">` 
+                                : `<div class="w-20 p-2 bg-indigo-50 border border-indigo-100 rounded-lg font-black text-lg text-indigo-400 text-center shadow-sm cursor-not-allowed">${pdhBemSold}</div>`
+                            }
                             <span class="text-xs font-bold text-slate-500">x <span class="text-indigo-600 text-base">Rp 240k</span></span>
                         </div>
                     </div>
@@ -1897,7 +1933,7 @@
             let tbodyHTML = '';
             let filteredTx = transactions;
 
-            if (currentUser !== 'GLOBAL') {
+            if (currentUser !== 'GLOBAL' && currentUser !== 'AF') {
                 filteredTx = transactions.filter(t => t.proker === currentUser);
             } else {
                 const filterVal = document.getElementById('filter-proker-riwayat')?.value || 'SEMUA';
@@ -1928,6 +1964,19 @@
                 const isPemasukan = t.type === 'pemasukan';
                 const tagCategory = t.category !== 'UMUM' ? `<span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] uppercase font-black mr-2">${t.category}</span>` : '';
                 
+                let actionHtml = '';
+                if (currentUser === 'AF') {
+                    actionHtml = `<td class="p-4 text-center align-middle"><span class="text-slate-300 text-xs">🔒</span></td>`;
+                } else {
+                    actionHtml = `
+                        <td class="p-4 text-center no-print align-middle">
+                            <div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="editTx('${t.dbId}')" class="p-2 bg-white border border-slate-200 text-blue-500 hover:bg-blue-50 hover:border-blue-200 rounded-lg transition-all shadow-sm" title="Edit Transaksi">✏️</button>
+                                <button onclick="deleteTx('${t.dbId}')" class="p-2 bg-white border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 rounded-lg transition-all shadow-sm" title="Hapus Transaksi">🗑️</button>
+                            </div>
+                        </td>`;
+                }
+
                 tbodyHTML += `
                     <tr class="hover:bg-slate-50/80 transition-colors group">
                         <td class="p-4 text-sm font-medium text-slate-500">${t.date}</td>
@@ -1943,16 +1992,7 @@
                         <td class="p-4 text-right font-black text-rose-500">
                             ${!isPemasukan ? formatRp(t.nominal) : '<span class="text-slate-300">-</span>'}
                         </td>
-                        <td class="p-4 text-center no-print align-middle">
-                            <div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="editTx('${t.dbId}')" class="p-2 bg-white border border-slate-200 text-blue-500 hover:bg-blue-50 hover:border-blue-200 rounded-lg transition-all shadow-sm" title="Edit Transaksi">
-                                    ✏️
-                                </button>
-                                <button onclick="deleteTx('${t.dbId}')" class="p-2 bg-white border border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200 rounded-lg transition-all shadow-sm" title="Hapus Transaksi">
-                                    🗑️
-                                </button>
-                            </div>
-                        </td>
+                        ${actionHtml}
                     </tr>
                 `;
             });
@@ -2116,7 +2156,9 @@
         });
 
         window.switchTab = function(tabId) {
-            if (currentUser !== 'GLOBAL' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce')) {
+            if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan'].includes(tabId)) {
+                tabId = 'laporan'; // Paksa ke laporan jika AF mencoba buka tab terlarang
+            } else if (currentUser !== 'GLOBAL' && currentUser !== 'AF' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce')) {
                 if (currentUser === 'SGE MARKET HUB' && (tabId === 'stoksge' || tabId === 'rekapsge')) {
                     // Allowed
                 } else {
