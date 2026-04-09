@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=update_harga_es_krim_119';
+        const currentVersion = 'v=akses_af_rekapsge_120';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -1053,7 +1053,7 @@
                 document.getElementById('tab-laporan').classList.remove('hidden'); 
                 document.getElementById('tab-kasce').classList.add('hidden'); 
                 document.getElementById('tab-stoksge').classList.add('hidden'); 
-                document.getElementById('tab-rekapsge').classList.add('hidden'); 
+                document.getElementById('tab-rekapsge').classList.remove('hidden'); 
                 document.getElementById('dashboard-charts-container').classList.remove('hidden'); 
                 document.getElementById('proker-selector-container').classList.add('hidden');
                 document.getElementById('filter-proker-riwayat').classList.remove('hidden');
@@ -1111,10 +1111,11 @@
             if (currentUser === 'AF') {
                 try { renderDashboard(); } catch(e) {}
                 try { renderLaporanAF(); } catch(e) {}
+                try { window.renderRekapSge(); } catch(e) {}
             }
             if (currentUser === 'GLOBAL' || currentUser === 'SGE MARKET HUB') {
                 try { renderSgeStockTab(); } catch(e) {}
-                try { renderRekapSge(); } catch(e) {}
+                try { window.renderRekapSge(); } catch(e) {}
             }
             try { renderRiwayat(); } catch(e) {}
             safeCreateIcons();
@@ -2158,7 +2159,7 @@
         });
 
         window.switchTab = function(tabId) {
-            if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan'].includes(tabId)) {
+            if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan', 'rekapsge'].includes(tabId)) {
                 tabId = 'laporan'; // Paksa ke laporan jika AF mencoba buka tab terlarang
             } else if (currentUser !== 'GLOBAL' && currentUser !== 'AF' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce')) {
                 if (currentUser === 'SGE MARKET HUB' && (tabId === 'stoksge' || tabId === 'rekapsge')) {
