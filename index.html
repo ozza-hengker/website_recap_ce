@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=super_fast_loading_122';
+        const currentVersion = 'v=fix_duplicate_code_123';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -995,13 +995,12 @@
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING (SUPER FAST VERSION)
+        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING 
         // =========================================================================
         async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                // Tambahkan parameter anti-cache '?t=' agar tidak menyangkut di memori HP
                 const cacheBusterUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
                 const response = await fetch(cacheBusterUrl, { ...options, signal: controller.signal });
                 clearTimeout(id);
@@ -1017,10 +1016,9 @@
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // TEMBAK 1 KALI SAJA LANGSUNG KE AKAR DATABASE (JAUH LEBIH CEPAT!)
+                // TEMBAK 1 KALI SAJA LANGSUNG KE AKAR DATABASE 
                 const response = await fetchWithTimeout(`${RTDB_URL}/.json`);
                 
-                // CEK APAKAH DITOLAK FIREBASE
                 if (!response.ok || response.status === 401 || response.status === 403) {
                     throw new Error("Akses Ditolak Firebase (Rules Expired)");
                 }
@@ -1238,7 +1236,6 @@
 
         function updateHeaderNetto() {
             if (currentUser === 'AF') {
-                // Sembunyikan Box Total Saldo CE agar AF tidak melihat kas internal
                 document.getElementById('header-netto-container').classList.add('hidden');
                 return;
             } else {
@@ -1281,7 +1278,6 @@
             const newEntries = [];
 
             rows.forEach(r => {
-                // Support pemisah Tab (dari Excel) atau Koma (dari CSV)
                 const cols = r.split(/\t|,/);
                 if(cols.length >= 2) {
                     const name = cols[0].trim();
@@ -1290,8 +1286,8 @@
                         newEntries.push({
                             name: name,
                             role: role,
-                            status: 0, // 0: Belum, 1: DP, 2: Lunas
-                            isUpSize: false, // Default ukuran biasa
+                            status: 0, 
+                            isUpSize: false, 
                             createdAt: Date.now()
                         });
                     }
@@ -1356,17 +1352,14 @@
             }
         };
 
-        // FITUR BARU: TOGGLE SIZE > XL (+10k)
         window.togglePdhUpSize = async function(dbId, isChecked) {
             try {
-                // Update local memory untuk UI responsif
                 const idx = pdhTrackerData.findIndex(p => p.dbId === dbId);
                 if(idx !== -1) pdhTrackerData[idx].isUpSize = isChecked;
                 
                 window.renderPdhTable(); 
                 if(typeof window.renderLaporanAF === 'function') window.renderLaporanAF();
 
-                // Background sync
                 await fetch(`${RTDB_URL}/pdh_tracker/${dbId}.json`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -1394,17 +1387,15 @@
 
             let totalTerkumpul = 0;
             let tagihanVendor = (totalPesanan * 220000) + (upSizeCount * 10000);
-            let estimasiLaba = totalPesanan * 20000; // Keuntungan murni per baju tetap 20rb
-            let setorAf = estimasiLaba; // Karena 100% Setor AF
+            let estimasiLaba = totalPesanan * 20000; 
+            let setorAf = estimasiLaba; 
 
             let tbodyHTML = '';
             
-            // Sort by Date, then filter by search
             const sortedData = [...pdhTrackerData].sort((a,b) => a.createdAt - b.createdAt);
             
             let no = 1;
             sortedData.forEach(p => {
-                // Hitung Uang Masuk
                 if (p.status === 1) totalTerkumpul += 120000;
                 else if (p.status === 2) totalTerkumpul += (240000 + (p.isUpSize ? 10000 : 0));
 
@@ -1423,7 +1414,6 @@
                 let upsizeHtml = '';
 
                 if (currentUser === 'AF') {
-                    // MODE VIEW-ONLY UNTUK AF
                     upsizeHtml = p.isUpSize ? '<span class="text-xs font-bold text-indigo-600">Ya (+10k)</span>' : '<span class="text-xs text-slate-400">Tidak</span>';
                     
                     let statusBadge = '';
@@ -1434,7 +1424,6 @@
                     statusHtml = statusBadge;
                     actionHtml = `<span class="text-slate-300 text-xs">🔒</span>`;
                 } else {
-                    // MODE EDIT UNTUK GLOBAL / SGE
                     upsizeHtml = `<label class="inline-flex items-center cursor-pointer p-1 hover:bg-slate-100 rounded-md transition-colors">
                                     <input type="checkbox" ${p.isUpSize ? 'checked' : ''} onchange="togglePdhUpSize('${p.dbId}', this.checked)" class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
                                   </label>`;
@@ -1469,7 +1458,6 @@
 
             document.getElementById('pdh-table-body').innerHTML = tbodyHTML;
             
-            // Update Summary
             document.getElementById('pdh-sum-qty').innerText = totalPesanan + " Pcs";
             document.getElementById('pdh-sum-collected').innerText = formatRp(totalTerkumpul);
             document.getElementById('pdh-sum-vendor').innerText = formatRp(tagihanVendor);
@@ -1872,175 +1860,212 @@
         // =========================================================================
         // DASHBOARD, LAPORAN, KAS CE, RIWAYAT TRANSAKSI KEUANGAN
         // =========================================================================
+        
+        window.renderLaporanAF = function() {
+            const monthVal = document.getElementById('report-month').value; 
+            if(!monthVal) return;
 
-        window.renderKasTable = function() {
-            let totalKasTerkumpul = 0;
-            let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
-            kasMonths.forEach(m => {
-                thead += `<th class="p-3 text-center text-xs font-black text-slate-500 uppercase tracking-wider w-32 min-w-[120px]">${m}</th>`;
-            });
-            thead += `</tr>`;
+            const [year, month] = monthVal.split('-');
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
+            document.getElementById('af-table-month-label').innerText = `Bulan: ${prettyMonth}`;
 
-            let tbody = '';
-            kasNames.forEach(name => {
-                tbody += `<tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">`;
-                tbody += `<td class="p-3 font-black text-slate-700 sticky-col uppercase tracking-wide text-sm">${name}</td>`;
-                
-                kasMonths.forEach(month => {
-                    const val = kasData[name]?.[month] || 0;
-                    totalKasTerkumpul += parseInt(val);
+            const filteredTx = transactions.filter(t => t.date.startsWith(monthVal) && t.proker !== 'FILKOMMERCH');
 
-                    let colorClass = 'bg-rose-50 text-rose-600 border-rose-200';
-                    if (val > 0 && val < 10000) colorClass = 'bg-amber-50 text-amber-700 border-amber-300';
-                    if (val == 10000) colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-300';
+            // SGE MARKET HUB
+            const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
+            const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const sgeNet = sgeIn - sgeOut;
+            const sgeAfShare = sgeNet > 0 ? sgeNet : 0; // 100% Setor AF
+            const sgeCeShare = 0; 
 
-                    tbody += `
-                        <td class="p-2 text-center w-32 min-w-[120px]">
-                            <select onchange="updateKas(this, '${name}', '${month}')" class="w-full py-2 px-1 text-[11px] font-black rounded-lg border ${colorClass} outline-none cursor-pointer text-center appearance-none shadow-sm transition-colors">
-                                <option value="0" ${val == 0 ? 'selected' : ''}>❌ Belum</option>
-                                <option value="2500" ${val == 2500 ? 'selected' : ''}>⏳ Rp 2.5k (W1)</option>
-                                <option value="5000" ${val == 5000 ? 'selected' : ''}>⏳ Rp 5k (W2)</option>
-                                <option value="7500" ${val == 7500 ? 'selected' : ''}>⏳ Rp 7.5k (W3)</option>
-                                <option value="10000" ${val == 10000 ? 'selected' : ''}>✅ LUNAS</option>
-                            </select>
-                        </td>
-                    `;
-                });
-                tbody += `</tr>`;
-            });
+            // STRATEGIC PARTNERSHIP
+            const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
+            const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+            const stratNet = stratIn - stratOut;
+            const stratAfShare = stratNet > 0 ? stratNet : 0; // 100% Setor AF
+            const stratCeShare = 0;
 
-            document.getElementById('kas-thead').innerHTML = thead;
-            document.getElementById('kas-tbody').innerHTML = tbody;
+            // PDH BEM 
+            const totalPesananPdh = pdhTrackerData.length;
+            const upSizeCount = pdhTrackerData.filter(p => p.isUpSize).length;
+            
+            const pdhOmset = (totalPesananPdh * PDH_HARGA_JUAL) + (upSizeCount * 10000);
+            const pdhModal = (totalPesananPdh * PDH_HARGA_VENDOR) + (upSizeCount * 10000);
+            const pdhNet = pdhOmset - pdhModal;
+            const pdhAfShare = pdhNet > 0 ? pdhNet : 0; // 100% Setor AF
+            const pdhCeShare = 0;
 
-            if (typeof window.renderFines === 'function') {
-                window.renderFines();
-            }
+            const grandTotalBersih = sgeNet + stratNet + pdhNet;
+            const grandTotalSetorAF = sgeAfShare + stratAfShare + pdhAfShare;
+            const grandTotalPorsiCE = sgeCeShare + stratCeShare + pdhCeShare;
 
-            let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
-            document.getElementById('total-kas-terkumpul').innerText = formatRp(totalKasTerkumpul + totalDendaTerbayar);
-        }
-
-        window.updateKas = async function(selectElement, name, month) {
-            const val = parseInt(selectElement.value);
-            selectElement.className = "w-full py-2 px-1 text-[11px] font-black rounded-lg border outline-none cursor-pointer text-center appearance-none shadow-sm transition-colors animate-pulse " + 
-                (val == 0 ? 'bg-rose-50 text-rose-600 border-rose-200' : 
-                (val == 10000 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'));
-
-            if (!kasData[name]) kasData[name] = {};
-            kasData[name][month] = val;
-
-            try {
-                const response = await fetch(`${RTDB_URL}/kas_ce/${name}.json`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [month]: val })
-                });
-
-                if(!response.ok) throw new Error("Gagal");
-                selectElement.classList.remove('animate-pulse');
-                
-                let total = 0;
-                for (const n in kasData) {
-                    for (const m in kasData[n]) { total += parseInt(kasData[n][m]); }
-                }
-                
-                let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
-                document.getElementById('total-kas-terkumpul').innerText = formatRp(total + totalDendaTerbayar);
-                updateHeaderNetto(); 
-
-            } catch(e) {
-                alert(`❌ Gagal menyimpan status kas.`);
-                selectElement.classList.remove('animate-pulse');
-            }
-        }
-
-        let barChartObj = null;
-        let pieChartObj = null;
-
-        window.renderDashboard = function() {
-            let totalIn = 0, totalOut = 0;
-            let cardsHTML = ''; 
-            const chartLabels = []; const chartDataIn = []; const chartDataOut = []; const chartDataBalance = [];
-            const pieColors = ['#f59e0b', '#0d9488', '#06b6d4']; 
-
-            prokers.forEach((proker) => {
-                const txProker = transactions.filter(t => t.proker === proker);
-                const inTotal = txProker.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-                const outTotal = txProker.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
-                const balance = inTotal - outTotal;
-                const isDefisit = balance < 0;
-
-                totalIn += inTotal; totalOut += outTotal;
-
-                let labelSingkat = proker === 'STRATEGIC PARTNERSHIP' ? 'STRATEGIC' : (proker === 'SGE MARKET HUB' ? 'SGE MARKET' : proker);
-                chartLabels.push(labelSingkat); chartDataIn.push(inTotal); chartDataOut.push(outTotal); chartDataBalance.push(balance > 0 ? balance : 0); 
-
-                cardsHTML += `
-                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-teal-300 transition-all relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 w-16 h-16 bg-slate-50 rounded-bl-full -mr-8 -mt-8 group-hover:bg-teal-50 transition-colors"></div>
-                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-4 group-hover:text-teal-600 transition-colors">${proker}</h3>
-                        <div class="space-y-3 mb-5">
-                            <div class="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
-                                <span class="text-slate-500 font-medium flex items-center gap-1">↙️ Masuk</span>
-                                <span class="font-bold text-emerald-600">${formatRp(inTotal)}</span>
-                            </div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-500 font-medium flex items-center gap-1">↗️ Keluar</span>
-                                <span class="font-bold text-rose-600">${formatRp(outTotal)}</span>
-                            </div>
+            document.getElementById('af-grand-total').innerHTML = `
+                <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 opacity-10"><i data-lucide="pie-chart" class="w-48 h-48"></i></div>
+                    <div class="flex items-center gap-4 mb-4 md:mb-0 relative z-10 w-full md:w-auto">
+                        <div class="bg-white/10 p-4 rounded-2xl border border-white/20 backdrop-blur-sm">
+                            <i data-lucide="award" class="w-10 h-10 text-emerald-400"></i>
                         </div>
-                        <div class="p-3.5 rounded-xl flex items-center justify-between ${isDefisit ? 'bg-rose-50 border border-rose-100' : 'bg-slate-50 border border-slate-100'}">
-                            <span class="text-[10px] font-black uppercase text-slate-400">Saldo Akhir</span>
-                            <span class="font-black ${isDefisit ? 'text-rose-600' : 'text-slate-800'} text-lg">${formatRp(balance)}</span>
+                        <div>
+                            <h3 class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-1">Grand Total Setoran AF</h3>
+                            <p class="text-3xl md:text-4xl font-black text-emerald-400 drop-shadow-md">${formatRp(grandTotalSetorAF)}</p>
                         </div>
                     </div>
-                `;
-            });
+                    <div class="flex gap-6 md:gap-8 relative z-10 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Laba Bersih BEM</p>
+                            <p class="text-xl font-bold text-white">${formatRp(grandTotalBersih)}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Porsi CE</p>
+                            <p class="text-xl font-bold text-cyan-300">${formatRp(grandTotalPorsiCE)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-            document.getElementById('proker-cards').innerHTML = cardsHTML;
-            document.getElementById('global-in').innerText = formatRp(totalIn);
-            document.getElementById('global-out').innerText = formatRp(totalOut);
+            document.getElementById('af-summary-cards').innerHTML = `
+                <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
+                    <div class="flex items-center justify-between mb-6 relative z-10">
+                        <h3 class="font-black text-teal-900 text-xl">SGE MARKET HUB</h3>
+                        <span class="bg-teal-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
+                    </div>
+                    <div class="space-y-2 mb-6 relative z-10">
+                        <div class="flex justify-between text-sm font-medium text-slate-600">
+                            <span>Pemasukan Kotor</span> <span class="text-emerald-600 font-bold">${formatRp(sgeIn)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-medium text-slate-600 pb-3 border-b border-teal-100">
+                            <span>Pengeluaran Modal</span> <span class="text-rose-500 font-bold">-${formatRp(sgeOut)}</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-black text-slate-800 pt-1">
+                            <span>Laba Bersih</span> <span>${formatRp(sgeNet)}</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-teal-100 shadow-sm space-y-3 relative z-10">
+                        <div class="flex justify-between items-center border-b border-slate-50 pb-2">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
+                            <span class="font-bold text-slate-700">${formatRp(sgeCeShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-sm font-black text-teal-600 uppercase tracking-wide">Setor ke AF</span>
+                            <span class="font-black text-teal-600 text-2xl">${formatRp(sgeAfShare)}</span>
+                        </div>
+                    </div>
+                </div>
 
-            if(currentUser !== 'GLOBAL' && currentUser !== 'AF') return;
+                <div class="bg-gradient-to-br from-cyan-50 to-white rounded-3xl p-8 border border-cyan-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
+                    <div class="flex items-center justify-between mb-6 relative z-10">
+                        <h3 class="font-black text-cyan-900 text-xl">STRATEGIC P.</h3>
+                        <span class="bg-cyan-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
+                    </div>
+                    <div class="space-y-2 mb-6 relative z-10">
+                        <div class="flex justify-between text-sm font-medium text-slate-600">
+                            <span>Pemasukan Kotor</span> <span class="text-emerald-600 font-bold">${formatRp(stratIn)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-medium text-slate-600 pb-3 border-b border-cyan-100">
+                            <span>Pengeluaran Operasional</span> <span class="text-rose-500 font-bold">-${formatRp(stratOut)}</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-black text-slate-800 pt-1">
+                            <span>Laba Bersih</span> <span>${formatRp(stratNet)}</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-cyan-100 shadow-sm space-y-3 relative z-10">
+                        <div class="flex justify-between items-center border-b border-slate-50 pb-2">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
+                            <span class="font-bold text-slate-700">${formatRp(stratCeShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-sm font-black text-cyan-600 uppercase tracking-wide">Setor ke AF</span>
+                            <span class="font-black text-cyan-600 text-2xl">${formatRp(stratAfShare)}</span>
+                        </div>
+                    </div>
+                </div>
 
-            if (typeof Chart === 'undefined') {
-                document.getElementById('dashboard-charts-container').innerHTML = '<div class="col-span-3 p-4 bg-slate-100 text-center text-slate-500 rounded-xl text-sm font-bold border border-dashed border-slate-300">Grafik tidak dapat ditampilkan. Fitur simpan dan tabel data 100% AMAN.</div>';
+                <div class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-8 border border-indigo-100 shadow-sm relative overflow-hidden md:col-span-2">
+                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shirt" class="w-24 h-24 text-indigo-900"></i></div>
+                    <div class="flex items-center justify-between mb-6 relative z-10">
+                        <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
+                            PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Otomatis dari Pendataan</span>
+                        </h3>
+                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
+                    </div>
+                    <div class="flex flex-col justify-center relative z-10 mb-4">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total Pesanan PDH Terdaftar</label>
+                        <div class="flex items-center gap-3">
+                            <div class="w-20 p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-black text-lg text-indigo-700 text-center shadow-sm cursor-not-allowed">${totalPesananPdh}</div>
+                            <span class="text-xs font-bold text-slate-500">Anggota</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2 relative z-10">
+                        <div class="flex justify-between text-[11px] font-medium text-slate-500">
+                            <span>Estimasi Pemasukan (Total)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] font-medium text-slate-500 pb-2 border-b border-slate-100">
+                            <span>Tagihan Vendor (Total)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
+                            <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
+                            <span class="font-bold text-slate-700 text-sm">${formatRp(pdhCeShare)}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-[11px] font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
+                            <span class="font-black text-indigo-600 text-xl">${formatRp(pdhAfShare)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            let totalIn = 0;
+            let totalOut = 0;
+            let tbodyHTML = '';
+
+            const sortedMonthTx = [...filteredTx].sort((a,b) => a.date.localeCompare(b.date));
+
+            if (sortedMonthTx.length === 0) {
+                document.getElementById('af-table-body').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi di bulan ini.</td></tr>`;
+                document.getElementById('af-table-foot').innerHTML = '';
+                safeCreateIcons();
                 return;
             }
 
-            try {
-                if (barChartObj) {
-                    barChartObj.data.datasets[0].data = chartDataIn;
-                    barChartObj.data.datasets[1].data = chartDataOut;
-                    barChartObj.update('none'); 
-                } else {
-                    const ctxBar = document.getElementById('barChart').getContext('2d');
-                    barChartObj = new Chart(ctxBar, {
-                        type: 'bar',
-                        data: {
-                            labels: chartLabels,
-                            datasets: [
-                                { label: 'Pemasukan', data: chartDataIn, backgroundColor: '#0d9488', borderRadius: 6, barPercentage: 0.6 },
-                                { label: 'Pengeluaran', data: chartDataOut, backgroundColor: '#f59e0b', borderRadius: 6, barPercentage: 0.6 }
-                            ]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }, scales: { y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { callback: function(value) { return 'Rp ' + (value/1000) + 'k'; } } }, x: { grid: { display: false } } } }
-                    });
-                }
+            sortedMonthTx.forEach(t => {
+                const isMasuk = t.type === 'pemasukan';
+                if(isMasuk) totalIn += t.nominal;
+                else totalOut += t.nominal;
 
-                if (pieChartObj) {
-                    pieChartObj.data.datasets[0].data = chartDataBalance;
-                    pieChartObj.update('none');
-                } else {
-                    const ctxPie = document.getElementById('pieChart').getContext('2d');
-                    pieChartObj = new Chart(ctxPie, {
-                        type: 'doughnut',
-                        data: { labels: chartLabels, datasets: [{ data: chartDataBalance, backgroundColor: pieColors, borderWidth: 0, hoverOffset: 4 }] },
-                        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } } }
-                    });
-                }
-            } catch (error) {}
-        }
+                const badgeColor = t.proker === 'SGE MARKET HUB' ? 'bg-teal-100 text-teal-700 border-teal-200' : 
+                                   t.proker === 'STRATEGIC PARTNERSHIP' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' : 'bg-slate-200 text-slate-700 border-slate-300';
+
+                tbodyHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 text-slate-500">${t.date}</td>
+                        <td class="p-4"><span class="${badgeColor} border px-2 py-1 rounded-md text-[10px] uppercase font-black tracking-wide">${t.proker}</span></td>
+                        <td class="p-4 text-slate-700">${t.category !== 'UMUM' ? `<span class="font-bold">`+t.category+`</span> - ` : ''}${t.desc}</td>
+                        <td class="p-4 text-right font-bold text-emerald-600">${isMasuk ? formatRp(t.nominal) : '-'}</td>
+                        <td class="p-4 text-right font-bold text-rose-500">${!isMasuk ? formatRp(t.nominal) : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('af-table-body').innerHTML = tbodyHTML;
+            document.getElementById('af-table-foot').innerHTML = `
+                <tr>
+                    <td colspan="3" class="p-4 text-right uppercase tracking-wider text-xs">Total Transaksi Bulan Ini:</td>
+                    <td class="p-4 text-right text-emerald-600 text-base">${formatRp(totalIn)}</td>
+                    <td class="p-4 text-right text-rose-600 text-base">${formatRp(totalOut)}</td>
+                </tr>
+            `;
+
+            safeCreateIcons(); 
+        };
 
         window.renderRiwayat = function() {
             let tbodyHTML = '';
@@ -2111,7 +2136,7 @@
             });
             
             document.getElementById('history-table-body').innerHTML = tbodyHTML;
-        }
+        };
 
         window.toggleSGEDropdown = function() {
             const proker = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -2145,7 +2170,7 @@
                 container.classList.remove('block');
                 categorySelect.innerHTML = '<option value="UMUM">UMUM</option>';
             }
-        }
+        };
 
         window.setTxType = function(type) {
             document.getElementById('input-type').value = type;
@@ -2159,7 +2184,7 @@
                 btnOut.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-rose-500 bg-rose-50 text-rose-600 shadow-sm flex items-center justify-center gap-2";
                 btnIn.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-slate-200 bg-white text-slate-400 hover:border-emerald-200 hover:text-emerald-500 flex items-center justify-center gap-2";
             }
-        }
+        };
 
         window.editTx = function(dbId) {
             const tx = transactions.find(t => t.dbId === dbId);
@@ -2188,7 +2213,7 @@
             
             safeCreateIcons();
             window.switchTab('input');
-        }
+        };
 
         window.deleteTx = async function(dbId) {
             if(confirm('Yakin ingin menghapus transaksi KEUANGAN ini permanen?')) {
@@ -2202,9 +2227,9 @@
                     alert(`❌ Gagal menghapus!\nPastikan internet menyala dan stabil.`);
                 }
             }
-        }
+        };
 
-        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+        document.getElementById('transaction-form')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -2241,7 +2266,6 @@
                 
                 const fetchMethod = editingDbId ? 'PATCH' : 'POST';
 
-                // Gunakan cacheBusterUrl jika sedang mengirim data dengan timeout
                 const cacheBusterUrl = fetchUrl.includes('?') ? `${fetchUrl}&t=${Date.now()}` : `${fetchUrl}?t=${Date.now()}`;
                 
                 const response = await fetch(cacheBusterUrl, {
@@ -2270,51 +2294,6 @@
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
             }
         });
-
-        window.switchTab = function(tabId) {
-            if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan', 'rekapsge'].includes(tabId)) {
-                tabId = 'laporan'; // Paksa ke laporan jika AF mencoba buka tab terlarang
-            } else if (currentUser !== 'GLOBAL' && currentUser !== 'AF' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce' || tabId === 'pdh')) {
-                if (currentUser === 'SGE MARKET HUB' && (tabId === 'stoksge' || tabId === 'rekapsge' || tabId === 'pdh')) {
-                    // Allowed
-                } else {
-                    tabId = 'input';
-                }
-            }
-
-            if (tabId !== 'input' && editingDbId) {
-                editingDbId = null;
-                const submitBtn = document.getElementById('btn-submit');
-                submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
-                submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
-                document.getElementById('input-nominal').value = '';
-                document.getElementById('input-desc').value = '';
-                safeCreateIcons();
-            }
-
-            activeTab = tabId;
-
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.getElementById('view-' + tabId).classList.remove('hidden');
-
-            document.querySelectorAll('.nav-tab').forEach(el => {
-                el.classList.remove('border-teal-600', 'text-teal-700', 'bg-teal-50/50');
-                el.classList.add('border-transparent', 'text-slate-500');
-            });
-
-            const activeTabEl = document.getElementById('tab-' + tabId);
-            if (activeTabEl) {
-                activeTabEl.classList.remove('border-transparent', 'text-slate-500');
-                activeTabEl.classList.add('border-teal-600', 'text-teal-700', 'bg-teal-50/50');
-            }
-
-            if(tabId === 'laporan') window.renderLaporanAF();
-            if(tabId === 'kasce') window.renderKasTable();
-            if(tabId === 'stoksge') renderSgeStockTab();
-            if(tabId === 'rekapsge') window.renderRekapSge(); 
-            if(tabId === 'pdh') window.renderPdhTable(); 
-            if(tabId === 'riwayat') window.renderRiwayat(); 
-        }
 
     </script>
 </body>
