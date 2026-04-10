@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=akses_af_rekapsge_120';
+        const currentVersion = 'v=laporan_af_100_persen_121';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -1735,34 +1735,35 @@
             const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
             document.getElementById('af-table-month-label').innerText = `Bulan: ${prettyMonth}`;
 
-            // Sembunyikan transaksi FILKOMMERCH dari Laporan AF karena 100% milik CE
+            // Sembunyikan transaksi FILKOMMERCH dari Laporan AF karena 100% milik CE (menunggu dekanat)
             const filteredTx = transactions.filter(t => t.date.startsWith(monthVal) && t.proker !== 'FILKOMMERCH');
 
-            // SGE MARKET HUB
+            // SGE MARKET HUB (100% ke AF)
             const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
             const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const sgeNet = sgeIn - sgeOut;
-            const sgeAfShare = sgeNet > 0 ? sgeNet * 0.5 : 0;
-            const sgeCeShare = sgeNet > 0 ? sgeNet * 0.5 : sgeNet; 
+            const sgeAfShare = sgeNet > 0 ? sgeNet : 0;
+            const sgeCeShare = sgeNet > 0 ? 0 : sgeNet; 
 
-            // STRATEGIC PARTNERSHIP
+            // STRATEGIC PARTNERSHIP (100% ke AF)
             const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
             const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
             const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const stratNet = stratIn - stratOut;
-            const stratAfShare = stratNet > 0 ? stratNet * 0.3 : 0;
-            const stratCeShare = stratNet > 0 ? stratNet * 0.7 : stratNet;
+            const stratAfShare = stratNet > 0 ? stratNet : 0;
+            const stratCeShare = stratNet > 0 ? 0 : stratNet;
 
-            // PDH BEM 
+            // PDH BEM (100% ke AF)
             const pdhOmset = pdhBemSold * 240000;
             const pdhModal = pdhBemSold * 220000;
             const pdhNet = pdhOmset - pdhModal;
-            const pdhShare = pdhNet > 0 ? pdhNet * 0.5 : 0;
+            const pdhAfShare = pdhNet > 0 ? pdhNet : 0;
+            const pdhCeShare = pdhNet > 0 ? 0 : pdhNet;
 
             const grandTotalBersih = sgeNet + stratNet + pdhNet;
-            const grandTotalSetorAF = sgeAfShare + stratAfShare + pdhShare;
-            const grandTotalPorsiCE = sgeCeShare + stratCeShare + pdhShare;
+            const grandTotalSetorAF = sgeAfShare + stratAfShare + pdhAfShare;
+            const grandTotalPorsiCE = sgeCeShare + stratCeShare + pdhCeShare;
 
             document.getElementById('af-grand-total').innerHTML = `
                 <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
@@ -1794,7 +1795,7 @@
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-teal-900 text-xl">SGE MARKET HUB</h3>
-                        <span class="bg-teal-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
+                        <span class="bg-teal-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
                     </div>
                     <div class="space-y-2 mb-6 relative z-10">
                         <div class="flex justify-between text-sm font-medium text-slate-600">
@@ -1809,7 +1810,7 @@
                     </div>
                     <div class="bg-white rounded-2xl p-5 border border-teal-100 shadow-sm space-y-3 relative z-10">
                         <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
+                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
                             <span class="font-bold text-slate-700">${formatRp(sgeCeShare)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-1">
@@ -1823,7 +1824,7 @@
                     <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
                     <div class="flex items-center justify-between mb-6 relative z-10">
                         <h3 class="font-black text-cyan-900 text-xl">STRATEGIC P.</h3>
-                        <span class="bg-cyan-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 70:30</span>
+                        <span class="bg-cyan-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
                     </div>
                     <div class="space-y-2 mb-6 relative z-10">
                         <div class="flex justify-between text-sm font-medium text-slate-600">
@@ -1838,7 +1839,7 @@
                     </div>
                     <div class="bg-white rounded-2xl p-5 border border-cyan-100 shadow-sm space-y-3 relative z-10">
                         <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (70%)</span>
+                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
                             <span class="font-bold text-slate-700">${formatRp(stratCeShare)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-1">
@@ -1854,7 +1855,7 @@
                         <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
                             PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Khusus Admin ${currentUser === 'GLOBAL' ? '(Edit)' : ''}</span>
                         </h3>
-                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
+                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
                     </div>
                     <div class="flex flex-col justify-center relative z-10 mb-4">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total PDH Terjual (Max 146)</label>
@@ -1877,12 +1878,12 @@
                             <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-2">
-                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
-                            <span class="font-bold text-slate-700 text-sm">${formatRp(pdhShare)}</span>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
+                            <span class="font-bold text-slate-700 text-sm">${formatRp(pdhCeShare)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-1">
                             <span class="text-[11px] font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
-                            <span class="font-black text-indigo-600 text-xl">${formatRp(pdhShare)}</span>
+                            <span class="font-black text-indigo-600 text-xl">${formatRp(pdhAfShare)}</span>
                         </div>
                     </div>
                 </div>
