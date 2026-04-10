@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Keuangan CE 2026</title>
     
-    <!-- Favicon untuk mengubah icon browser tab (dokumen kosong) menjadi Logo CE -->
+    <!-- Favicon untuk mengubah icon browser tab menjadi Logo CE -->
     <link rel="icon" type="image/png" href="LOGO%20CE.png">
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=laporan_af_100_persen_122_pdhjumbo';
+        const currentVersion = 'v=laporan_af_100_persen_123_pdh_fixed';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -837,7 +837,6 @@
         const rekapSgeMonthEl = document.getElementById('rekapsge-month');
         if(rekapSgeMonthEl) rekapSgeMonthEl.value = currentMonthString;
 
-        // Dropdown updater for Stok SGE
         window.updateStockItemDropdown = function() {
             const cat = document.getElementById('stock-category').value;
             const itemSelect = document.getElementById('stock-item');
@@ -863,7 +862,6 @@
             if(fd) fd.valueAsDate = new Date();
         };
 
-        // KALKULATOR RUGI OTOMATIS DI FORM STOK
         window.calculateNominalStock = function() {
             const type = document.getElementById('stock-type').value;
             const container = document.getElementById('nominal-display-container');
@@ -899,9 +897,6 @@
 
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
-        // =========================================================================
-        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING 
-        // =========================================================================
         async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -929,7 +924,7 @@
                 ]);
                 
                 if (!resTx.ok || resTx.status === 401 || resTx.status === 403) {
-                    throw new Error("Akses Ditolak Firebase (Rules Expired)");
+                    throw new Error("Akses Ditolak Firebase");
                 }
 
                 if (resTx.ok) {
@@ -994,7 +989,7 @@
                 console.error("Fetch DB Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Akses Ditolak (Rules)';
+                    dbStatusEl.innerHTML = '❌ Akses Ditolak';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
@@ -1130,7 +1125,6 @@
 
         function updateHeaderNetto() {
             if (currentUser === 'AF') {
-                // Sembunyikan Box Total Saldo CE agar AF tidak melihat kas internal
                 document.getElementById('header-netto-container').classList.add('hidden');
                 return;
             } else {
@@ -1155,7 +1149,6 @@
         // =========================================================================
         // FITUR DENDA (KAS CE)
         // =========================================================================
-
         document.getElementById('fine-form')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-submit-fine');
@@ -1271,7 +1264,6 @@
         // =========================================================================
         // MANAJEMEN STOK SGE (LEDGER BASED) MOCKUP KIYA
         // =========================================================================
-        
         window.setStockType = function(type) {
             document.getElementById('stock-type').value = type;
             const btnIn = document.getElementById('btn-stok-masuk');
