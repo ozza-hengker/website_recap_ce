@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=super_fast_anti_lag_124';
+        const currentVersion = 'v=final_speed_fix_125';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -847,7 +847,7 @@
         // DATABASE HARGA SGE UNTUK KALKULASI KERUGIAN DAN OMSET
         const sgeItemPrices = {
             "3 IN 1 COLOR CUP": 10000, "BANANA CRISPY": 5000, "BERRY CHOCO MAX CONE": 6000, "BINGO (Chocolate Stick)": 3500,
-            "BLUEBERY COOKIES": 6000, "BROWN SUGAR BOBA": 6000, "CEREAL MILK CRISPY": 4000, "CHOCO MALT": 3500,
+            "BLUEBERY COOKIES": 6000, "BROWN Sugar BOBA": 6000, "CEREAL MILK CRISPY": 4000, "CHOCO MALT": 3500,
             "CHOCO MEETS OATS": 8000, "CHOCO MELT CONE": 6000, "CHOCOLATE STRIKE": 10000, "CHOCOLATECRISPY": 5500,
             "CONE BINGO": 6000, "CONE STRAWBERY": 6000, "CORN WONDERLAND": 4000, "2 COLOURS STICK": 3000,
             "CRISPY BALL": 5500, "DOUBLE MIKI COCHOLATE": 2000, "TARO CRISPY": 4500, "FRUITY ROLL": 4000,
@@ -994,14 +994,13 @@
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI (SUPER FAST & ERROR RESILIENT)
+        // FETCH DATA MURNI (1 KALI TEMBAK SAJA)
         // =========================================================================
-        async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const cacheBusterUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
-                const response = await fetch(cacheBusterUrl, { ...options, signal: controller.signal });
+                const response = await fetch(url, { ...options, signal: controller.signal });
                 clearTimeout(id);
                 return response;
             } catch (error) {
@@ -1015,89 +1014,71 @@
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh && !isSilent) btnRefresh.innerHTML = '⏳ Loading...';
 
-                const urls = [
-                    `${RTDB_URL}/transactions.json`,
-                    `${RTDB_URL}/kas_ce.json`,
-                    `${RTDB_URL}/sge_stock_ledger.json`,
-                    `${RTDB_URL}/ce_fines.json`,
-                    `${RTDB_URL}/pdh_tracker.json`
-                ];
+                // TEMBAK 1 KALI SAJA LANGSUNG KE AKAR DATABASE (JAUH LEBIH CEPAT & AMAN)
+                const response = await fetchWithTimeout(`${RTDB_URL}/.json`, {
+                    headers: { 'Cache-Control': 'no-store' }
+                });
+                
+                if (!response.ok || response.status === 401 || response.status === 403) {
+                    throw new Error("Akses Ditolak Firebase");
+                }
 
-                const promises = urls.map(url => fetchWithTimeout(url).then(res => {
-                    if(!res.ok) throw new Error("HTTP " + res.status);
-                    return res.json();
-                }));
-
-                // Promise.allSettled mencegah web blank jika ada 1 data yang gagal dimuat
-                const results = await Promise.allSettled(promises);
-                let hasError = false;
+                const allData = await response.json() || {};
 
                 // 1. Parsing Transaksi
-                if (results[0].status === 'fulfilled' && results[0].value) {
-                    const dataTx = results[0].value;
-                    let fetchedTxs = [];
-                    for (let key in dataTx) { fetchedTxs.push({ dbId: key, ...dataTx[key] }); }
-                    const newHash = JSON.stringify(fetchedTxs);
-                    if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
-                } else if (results[0].status === 'rejected') hasError = true;
+                let fetchedTxs = [];
+                if (allData.transactions) {
+                    for (let key in allData.transactions) { fetchedTxs.push({ dbId: key, ...allData.transactions[key] }); }
+                }
+                const newHash = JSON.stringify(fetchedTxs);
+                if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
 
                 // 2. Parsing Kas CE
-                if (results[1].status === 'fulfilled') {
-                    const dataKas = results[1].value || {};
-                    const newKasHash = JSON.stringify(dataKas);
-                    if (newKasHash !== currentKasHash) { kasData = dataKas; currentKasHash = newKasHash; }
-                } else if (results[1].status === 'rejected') hasError = true;
+                const newKasHash = JSON.stringify(allData.kas_ce || {});
+                if (newKasHash !== currentKasHash) { kasData = allData.kas_ce || {}; currentKasHash = newKasHash; }
 
                 // 3. Parsing Ledger Stok SGE
-                if (results[2].status === 'fulfilled') {
-                    const dataLedger = results[2].value || {};
-                    let fetchedLedger = [];
-                    for (let key in dataLedger) { fetchedLedger.push({ dbId: key, ...dataLedger[key] }); }
-                    const newLedgerHash = JSON.stringify(fetchedLedger);
-                    if (newLedgerHash !== currentStockLedgerHash) { stockLedger = fetchedLedger; currentStockLedgerHash = newLedgerHash; }
-                } else if (results[2].status === 'rejected') hasError = true;
+                let fetchedLedger = [];
+                if (allData.sge_stock_ledger) {
+                    for (let key in allData.sge_stock_ledger) { fetchedLedger.push({ dbId: key, ...allData.sge_stock_ledger[key] }); }
+                }
+                const newLedgerHash = JSON.stringify(fetchedLedger);
+                if (newLedgerHash !== currentStockLedgerHash) { stockLedger = fetchedLedger; currentStockLedgerHash = newLedgerHash; }
 
                 // 4. Parsing Denda
-                if (results[3].status === 'fulfilled') {
-                    const dataFines = results[3].value || {};
-                    let fetchedFines = [];
-                    for (let key in dataFines) { fetchedFines.push({ dbId: key, ...dataFines[key] }); }
-                    const newFinesHash = JSON.stringify(fetchedFines);
-                    if (newFinesHash !== currentFinesHash) { ceFines = fetchedFines; currentFinesHash = newFinesHash; }
-                } else if (results[3].status === 'rejected') hasError = true;
+                let fetchedFines = [];
+                if (allData.ce_fines) {
+                    for (let key in allData.ce_fines) { fetchedFines.push({ dbId: key, ...allData.ce_fines[key] }); }
+                }
+                const newFinesHash = JSON.stringify(fetchedFines);
+                if (newFinesHash !== currentFinesHash) { ceFines = fetchedFines; currentFinesHash = newFinesHash; }
 
                 // 5. Parsing Tracker PDH
-                if (results[4].status === 'fulfilled') {
-                    const dataPdhTracker = results[4].value || {};
-                    let fetchedPdh = [];
-                    for (let key in dataPdhTracker) { fetchedPdh.push({ dbId: key, ...dataPdhTracker[key] }); }
-                    const newPdhHash = JSON.stringify(fetchedPdh);
-                    if (newPdhHash !== currentPdhTrackerHash) { pdhTrackerData = fetchedPdh; currentPdhTrackerHash = newPdhHash; }
-                } else if (results[4].status === 'rejected') hasError = true;
+                let fetchedPdh = [];
+                if (allData.pdh_tracker) {
+                    for (let key in allData.pdh_tracker) { fetchedPdh.push({ dbId: key, ...allData.pdh_tracker[key] }); }
+                }
+                const newPdhHash = JSON.stringify(fetchedPdh);
+                if (newPdhHash !== currentPdhTrackerHash) { pdhTrackerData = fetchedPdh; currentPdhTrackerHash = newPdhHash; }
 
                 if (currentUser) updateUI();
 
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    if (hasError) {
-                        dbStatusEl.innerHTML = '⚠️ Sebagian Gagal';
-                        dbStatusEl.className = 'bg-amber-500/20 text-amber-300 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1 shadow-sm';
-                    } else {
-                        dbStatusEl.innerHTML = '✅ RTDB Aktif';
-                        dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
-                    }
+                    dbStatusEl.innerHTML = '✅ RTDB Aktif';
+                    dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
                 }
 
             } catch (err) {
                 console.error("Fetch DB Kritis:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Koneksi Terputus';
+                    dbStatusEl.innerHTML = '❌ Koneksi Error';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
                 const btnRefresh = document.getElementById('btn-refresh');
-                if(btnRefresh && !isSilent) btnRefresh.innerHTML = '🔄 Segarkan';
+                if(btnRefresh && !isSilent) btnRefresh.innerHTML = '🔄 Segarkan Data';
             }
         };
 
@@ -1279,47 +1260,50 @@
             if(!text.trim()) return alert("Teks masih kosong!");
 
             const rows = text.split('\n');
-            const newEntries = [];
+            const patchData = {};
+            let validCount = 0;
 
-            rows.forEach(r => {
+            rows.forEach((r, i) => {
                 const cols = r.split(/\t|,/);
                 if(cols.length >= 2) {
                     const name = cols[0].trim();
                     const role = cols[1].trim();
                     if(name && role) {
-                        newEntries.push({
+                        const uniqueId = `import_${Date.now()}_${i}`;
+                        patchData[uniqueId] = {
                             name: name,
                             role: role,
                             status: 0, 
                             isUpSize: false, 
-                            createdAt: Date.now()
-                        });
+                            createdAt: Date.now() + i
+                        };
+                        validCount++;
                     }
                 }
             });
 
-            if(newEntries.length === 0) return alert("Gagal membaca format. Pastikan formatnya: Nama [TAB] Jabatan");
+            if(validCount === 0) return alert("Gagal membaca format. Pastikan formatnya: Nama [TAB] Jabatan");
 
-            if(!confirm(`Ditemukan ${newEntries.length} data. Yakin ingin import ke sistem?`)) return;
+            if(!confirm(`Ditemukan ${validCount} data. Yakin ingin import ke sistem?`)) return;
 
             const btn = document.querySelector('#pdh-import-box button.bg-indigo-500');
             btn.innerHTML = 'MENGIRIM DATA...';
             btn.disabled = true;
 
             try {
-                const promises = newEntries.map(data => 
-                    fetch(`${RTDB_URL}/pdh_tracker.json`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    })
-                );
-                await Promise.all(promises);
+                // BATCH REQUEST: 1 Kali kirim untuk ratusan data sekaligus
+                const response = await fetch(`${RTDB_URL}/pdh_tracker.json`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(patchData)
+                });
+                
+                if (!response.ok) throw new Error("Gagal import");
                 
                 document.getElementById('pdh-import-text').value = '';
                 toggleImportBox();
                 await fetchDatabase(false);
-                alert(`✅ Berhasil import ${newEntries.length} anggota!`);
+                alert(`✅ Berhasil import ${validCount} anggota dalam sekejap!`);
             } catch(e) {
                 alert('❌ Sebagian data gagal terkirim. Coba lagi.');
             } finally {
@@ -1599,7 +1583,7 @@
             } else if (type === 'keluar') {
                 btnOut.className = "p-2 rounded-xl border-2 font-bold text-xs transition-all border-blue-500 bg-blue-50 text-blue-700 flex flex-col items-center justify-center gap-1";
             } else if (type === 'hilang') {
-                btnLoss.className = "p-2 rounded-xl border-2 font-bold text-xs transition-all border-rose-500 bg-rose-50 text-rose-700 flex flex-col items-center justify-center gap-1 text-center leading-tight";
+                btnLoss.className = "p-2 rounded-xl border-2 font-bold text-xs transition-all border-slate-200 bg-white text-slate-400 hover:border-rose-300 hover:text-rose-600 flex flex-col items-center justify-center gap-1 text-center leading-tight";
             }
             
             window.calculateNominalStock();
@@ -2259,11 +2243,9 @@
                 
                 const fetchMethod = editingDbId ? 'PATCH' : 'POST';
 
-                const cacheBusterUrl = fetchUrl.includes('?') ? `${fetchUrl}&t=${Date.now()}` : `${fetchUrl}?t=${Date.now()}`;
-                
-                const response = await fetch(cacheBusterUrl, {
+                const response = await fetch(fetchUrl, {
                     method: fetchMethod,
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
                     body: JSON.stringify(txData)
                 });
 
