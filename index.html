@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=fix_duplicate_code_123';
+        const currentVersion = 'v=super_fast_anti_lag_124';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -291,13 +291,13 @@
                         <h2 id="riwayat-title" class="text-2xl font-black text-slate-800">Buku Kas (Riwayat)</h2>
                     </div>
                     <div class="flex items-center gap-3 w-full md:w-auto">
-                        <select id="filter-proker-riwayat" onchange="renderRiwayat()" class="hidden w-full md:w-auto p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
+                        <select id="filter-proker-riwayat" onchange="window.renderRiwayat()" class="hidden w-full md:w-auto p-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors">
                             <option value="SEMUA">Semua Proker</option>
                             <option value="STRATEGIC PARTNERSHIP">Strategic Partnership</option>
                             <option value="FILKOMMERCH">Filkommerch</option>
                             <option value="SGE MARKET HUB">SGE Market Hub</option>
                         </select>
-                        <button onclick="fetchDatabase()" id="btn-refresh" class="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm py-2.5 px-4 rounded-lg font-bold flex items-center gap-2 transition-colors active:scale-95 whitespace-nowrap">
+                        <button onclick="fetchDatabase(false)" id="btn-refresh" class="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 shadow-sm py-2.5 px-4 rounded-lg font-bold flex items-center gap-2 transition-colors active:scale-95 whitespace-nowrap">
                             🔄 Segarkan
                         </button>
                     </div>
@@ -350,7 +350,7 @@
                     <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex items-center pl-3">
                             <i data-lucide="calendar" class="w-4 h-4 text-slate-400 mr-2"></i>
-                            <input type="month" id="report-month" onchange="renderLaporanAF()" class="bg-transparent text-slate-800 font-bold outline-none cursor-pointer">
+                            <input type="month" id="report-month" onchange="window.renderLaporanAF()" class="bg-transparent text-slate-800 font-bold outline-none cursor-pointer">
                         </div>
                         <div class="w-px h-8 bg-slate-200"></div>
                         <button onclick="window.print()" class="no-print bg-slate-800 text-white py-2 px-4 rounded-xl hover:bg-slate-900 transition-all active:scale-95 flex items-center gap-2 font-bold shadow-md">
@@ -649,7 +649,7 @@
                     <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex items-center pl-3">
                             <i data-lucide="calendar" class="w-4 h-4 text-slate-400 mr-2"></i>
-                            <input type="month" id="rekapsge-month" onchange="renderRekapSge()" class="bg-transparent text-slate-800 font-bold outline-none cursor-pointer">
+                            <input type="month" id="rekapsge-month" onchange="window.renderRekapSge()" class="bg-transparent text-slate-800 font-bold outline-none cursor-pointer">
                         </div>
                         <div class="w-px h-8 bg-slate-200"></div>
                         <button onclick="window.print()" class="no-print bg-slate-800 text-white py-2 px-4 rounded-xl hover:bg-slate-900 transition-all active:scale-95 flex items-center gap-2 font-bold shadow-md">
@@ -764,7 +764,7 @@
                         <div class="flex gap-2 w-full md:w-auto">
                             <div class="relative w-full md:w-64">
                                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                                <input type="text" id="pdh-search" oninput="renderPdhTable()" placeholder="Cari nama..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400 shadow-sm">
+                                <input type="text" id="pdh-search" oninput="window.renderPdhTable()" placeholder="Cari nama..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400 shadow-sm">
                             </div>
                         </div>
                     </div>
@@ -901,7 +901,6 @@
         // KONSTANTA HARGA PDH
         const PDH_HARGA_JUAL = 240000;
         const PDH_HARGA_VENDOR = 220000;
-        const PDH_PROFIT = PDH_HARGA_JUAL - PDH_HARGA_VENDOR;
 
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
@@ -995,7 +994,7 @@
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING 
+        // FETCH DATA MURNI (SUPER FAST & ERROR RESILIENT)
         // =========================================================================
         async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
             const controller = new AbortController();
@@ -1011,89 +1010,100 @@
             }
         }
 
-        window.fetchDatabase = async function() {
+        window.fetchDatabase = async function(isSilent = false) {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
-                if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
+                if(btnRefresh && !isSilent) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // TEMBAK 1 KALI SAJA LANGSUNG KE AKAR DATABASE 
-                const response = await fetchWithTimeout(`${RTDB_URL}/.json`);
-                
-                if (!response.ok || response.status === 401 || response.status === 403) {
-                    throw new Error("Akses Ditolak Firebase (Rules Expired)");
-                }
+                const urls = [
+                    `${RTDB_URL}/transactions.json`,
+                    `${RTDB_URL}/kas_ce.json`,
+                    `${RTDB_URL}/sge_stock_ledger.json`,
+                    `${RTDB_URL}/ce_fines.json`,
+                    `${RTDB_URL}/pdh_tracker.json`
+                ];
 
-                const allData = await response.json() || {};
+                const promises = urls.map(url => fetchWithTimeout(url).then(res => {
+                    if(!res.ok) throw new Error("HTTP " + res.status);
+                    return res.json();
+                }));
+
+                // Promise.allSettled mencegah web blank jika ada 1 data yang gagal dimuat
+                const results = await Promise.allSettled(promises);
+                let hasError = false;
 
                 // 1. Parsing Transaksi
-                let fetchedTxs = [];
-                if (allData.transactions) {
-                    for (let key in allData.transactions) { fetchedTxs.push({ dbId: key, ...allData.transactions[key] }); }
-                }
-                const newHash = JSON.stringify(fetchedTxs);
-                if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
+                if (results[0].status === 'fulfilled' && results[0].value) {
+                    const dataTx = results[0].value;
+                    let fetchedTxs = [];
+                    for (let key in dataTx) { fetchedTxs.push({ dbId: key, ...dataTx[key] }); }
+                    const newHash = JSON.stringify(fetchedTxs);
+                    if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
+                } else if (results[0].status === 'rejected') hasError = true;
 
                 // 2. Parsing Kas CE
-                const newKasHash = JSON.stringify(allData.kas_ce || {});
-                if (newKasHash !== currentKasHash) { kasData = allData.kas_ce || {}; currentKasHash = newKasHash; }
+                if (results[1].status === 'fulfilled') {
+                    const dataKas = results[1].value || {};
+                    const newKasHash = JSON.stringify(dataKas);
+                    if (newKasHash !== currentKasHash) { kasData = dataKas; currentKasHash = newKasHash; }
+                } else if (results[1].status === 'rejected') hasError = true;
 
                 // 3. Parsing Ledger Stok SGE
-                let fetchedLedger = [];
-                if (allData.sge_stock_ledger) {
-                    for (let key in allData.sge_stock_ledger) { fetchedLedger.push({ dbId: key, ...allData.sge_stock_ledger[key] }); }
-                }
-                const newLedgerHash = JSON.stringify(fetchedLedger);
-                if (newLedgerHash !== currentStockLedgerHash) { 
-                    stockLedger = fetchedLedger; 
-                    currentStockLedgerHash = newLedgerHash; 
-                }
+                if (results[2].status === 'fulfilled') {
+                    const dataLedger = results[2].value || {};
+                    let fetchedLedger = [];
+                    for (let key in dataLedger) { fetchedLedger.push({ dbId: key, ...dataLedger[key] }); }
+                    const newLedgerHash = JSON.stringify(fetchedLedger);
+                    if (newLedgerHash !== currentStockLedgerHash) { stockLedger = fetchedLedger; currentStockLedgerHash = newLedgerHash; }
+                } else if (results[2].status === 'rejected') hasError = true;
 
                 // 4. Parsing Denda
-                let fetchedFines = [];
-                if (allData.ce_fines) {
-                    for (let key in allData.ce_fines) { fetchedFines.push({ dbId: key, ...allData.ce_fines[key] }); }
-                }
-                const newFinesHash = JSON.stringify(fetchedFines);
-                if (newFinesHash !== currentFinesHash) {
-                    ceFines = fetchedFines;
-                    currentFinesHash = newFinesHash;
-                }
+                if (results[3].status === 'fulfilled') {
+                    const dataFines = results[3].value || {};
+                    let fetchedFines = [];
+                    for (let key in dataFines) { fetchedFines.push({ dbId: key, ...dataFines[key] }); }
+                    const newFinesHash = JSON.stringify(fetchedFines);
+                    if (newFinesHash !== currentFinesHash) { ceFines = fetchedFines; currentFinesHash = newFinesHash; }
+                } else if (results[3].status === 'rejected') hasError = true;
 
                 // 5. Parsing Tracker PDH
-                let fetchedPdh = [];
-                if (allData.pdh_tracker) {
-                    for (let key in allData.pdh_tracker) { fetchedPdh.push({ dbId: key, ...allData.pdh_tracker[key] }); }
-                }
-                const newPdhHash = JSON.stringify(fetchedPdh);
-                if (newPdhHash !== currentPdhTrackerHash) {
-                    pdhTrackerData = fetchedPdh;
-                    currentPdhTrackerHash = newPdhHash;
-                }
+                if (results[4].status === 'fulfilled') {
+                    const dataPdhTracker = results[4].value || {};
+                    let fetchedPdh = [];
+                    for (let key in dataPdhTracker) { fetchedPdh.push({ dbId: key, ...dataPdhTracker[key] }); }
+                    const newPdhHash = JSON.stringify(fetchedPdh);
+                    if (newPdhHash !== currentPdhTrackerHash) { pdhTrackerData = fetchedPdh; currentPdhTrackerHash = newPdhHash; }
+                } else if (results[4].status === 'rejected') hasError = true;
 
                 if (currentUser) updateUI();
 
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '✅ RTDB Aktif';
-                    dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
+                    if (hasError) {
+                        dbStatusEl.innerHTML = '⚠️ Sebagian Gagal';
+                        dbStatusEl.className = 'bg-amber-500/20 text-amber-300 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1 shadow-sm';
+                    } else {
+                        dbStatusEl.innerHTML = '✅ RTDB Aktif';
+                        dbStatusEl.className = 'bg-emerald-400/20 text-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 shadow-sm';
+                    }
                 }
 
             } catch (err) {
-                console.error("Fetch DB Gagal:", err);
+                console.error("Fetch DB Kritis:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Akses Ditolak/Lemot';
+                    dbStatusEl.innerHTML = '❌ Koneksi Terputus';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
                 const btnRefresh = document.getElementById('btn-refresh');
-                if(btnRefresh) btnRefresh.innerHTML = '🔄 Segarkan Data';
+                if(btnRefresh && !isSilent) btnRefresh.innerHTML = '🔄 Segarkan';
             }
         };
 
         function startSync() {
-            fetchDatabase(); 
-            if (!syncInterval) { syncInterval = setInterval(fetchDatabase, 20000); }
+            fetchDatabase(false); 
+            if (!syncInterval) { syncInterval = setInterval(() => fetchDatabase(true), 20000); }
         }
 
         function stopSync() {
@@ -1129,8 +1139,6 @@
                 document.getElementById('user-role-text').innerText = 'PJ ' + role;
             }
             
-            updateUI();
-
             if(role === 'GLOBAL') {
                 document.getElementById('tab-dashboard').classList.remove('hidden');
                 document.getElementById('tab-input').classList.remove('hidden');
@@ -1200,7 +1208,6 @@
 
             window.toggleSGEDropdown();
             startSync(); 
-            setTimeout(() => safeCreateIcons(), 50);
         }
 
         window.logout = function() {
@@ -1214,24 +1221,21 @@
         function updateUI() {
             if(!currentUser) return;
             try { updateHeaderNetto(); } catch(e) {}
-            if(currentUser === 'GLOBAL') {
-                try { renderDashboard(); } catch(e) {}
-                try { renderLaporanAF(); } catch(e) {}
-                try { renderKasTable(); } catch(e) {}
+            
+            // LAZY RENDER: HANYA GAMBAR ULANG HALAMAN YANG SEDANG DIBUKA UNTUK MENCEGAH LAG!
+            try {
+                if (activeTab === 'dashboard') renderDashboard();
+                else if (activeTab === 'riwayat') window.renderRiwayat();
+                else if (activeTab === 'laporan') window.renderLaporanAF();
+                else if (activeTab === 'kasce') window.renderKasTable();
+                else if (activeTab === 'stoksge') renderSgeStockTab();
+                else if (activeTab === 'rekapsge') window.renderRekapSge();
+                else if (activeTab === 'pdh') window.renderPdhTable();
+            } catch(e) {
+                console.error("Render Error:", e);
             }
-            if (currentUser === 'AF') {
-                try { renderDashboard(); } catch(e) {}
-                try { renderLaporanAF(); } catch(e) {}
-                try { window.renderRekapSge(); } catch(e) {}
-                try { window.renderPdhTable(); } catch(e) {}
-            }
-            if (currentUser === 'GLOBAL' || currentUser === 'SGE MARKET HUB') {
-                try { renderSgeStockTab(); } catch(e) {}
-                try { window.renderRekapSge(); } catch(e) {}
-                try { window.renderPdhTable(); } catch(e) {}
-            }
-            try { renderRiwayat(); } catch(e) {}
-            safeCreateIcons();
+            
+            setTimeout(() => safeCreateIcons(), 50);
         }
 
         function updateHeaderNetto() {
@@ -1314,7 +1318,7 @@
                 
                 document.getElementById('pdh-import-text').value = '';
                 toggleImportBox();
-                await fetchDatabase();
+                await fetchDatabase(false);
                 alert(`✅ Berhasil import ${newEntries.length} anggota!`);
             } catch(e) {
                 alert('❌ Sebagian data gagal terkirim. Coba lagi.');
@@ -1344,8 +1348,7 @@
                 const idx = pdhTrackerData.findIndex(p => p.dbId === dbId);
                 if(idx !== -1) pdhTrackerData[idx].status = newStatus;
                 
-                window.renderPdhTable(); 
-                if(typeof window.renderLaporanAF === 'function') window.renderLaporanAF();
+                updateUI();
             } catch(e) {
                 alert(`❌ Gagal menyimpan status PDH.`);
                 selectElement.classList.remove('animate-pulse');
@@ -1357,8 +1360,7 @@
                 const idx = pdhTrackerData.findIndex(p => p.dbId === dbId);
                 if(idx !== -1) pdhTrackerData[idx].isUpSize = isChecked;
                 
-                window.renderPdhTable(); 
-                if(typeof window.renderLaporanAF === 'function') window.renderLaporanAF();
+                updateUI();
 
                 await fetch(`${RTDB_URL}/pdh_tracker/${dbId}.json`, {
                     method: 'PATCH',
@@ -1374,7 +1376,7 @@
             if(confirm("Yakin hapus anggota ini dari daftar PDH?")) {
                 try {
                     await fetch(`${RTDB_URL}/pdh_tracker/${dbId}.json`, { method: 'DELETE' });
-                    fetchDatabase();
+                    fetchDatabase(false);
                 } catch(e) { alert('Gagal Hapus'); }
             }
         };
@@ -1463,8 +1465,6 @@
             document.getElementById('pdh-sum-vendor').innerText = formatRp(tagihanVendor);
             document.getElementById('pdh-sum-profit').innerText = formatRp(estimasiLaba);
             document.getElementById('pdh-sum-af').innerText = formatRp(setorAf);
-            
-            safeCreateIcons();
         };
 
         // =========================================================================
@@ -1503,14 +1503,13 @@
                 document.getElementById('fine-reason').value = '';
                 document.getElementById('fine-name').selectedIndex = 0;
                 
-                await fetchDatabase();
+                await fetchDatabase(false);
                 alert('✅ Catatan denda berhasil ditambahkan!');
             } catch(e) {
                 alert('❌ Gagal menyimpan denda. Pastikan internet stabil.');
             } finally {
                 btn.innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> TAMBAH DENDA';
                 btn.disabled = false;
-                safeCreateIcons();
             }
         });
 
@@ -1521,7 +1520,7 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ isPaid: !currentIsPaid })
                 });
-                fetchDatabase();
+                fetchDatabase(false);
             } catch(e) {
                 alert('Gagal mengubah status denda.');
             }
@@ -1531,7 +1530,7 @@
             if(confirm('Hapus data denda ini?')) {
                 try {
                     await fetchWithTimeout(`${RTDB_URL}/ce_fines/${dbId}.json`, { method: 'DELETE' });
-                    fetchDatabase();
+                    fetchDatabase(false);
                 } catch(e) {
                     alert('Gagal hapus.');
                 }
@@ -1579,8 +1578,6 @@
             
             const pFines = document.getElementById('total-paid-fines');
             if(pFines) pFines.innerText = formatRp(totalPaid);
-            
-            safeCreateIcons();
         }
 
         // =========================================================================
@@ -1651,7 +1648,7 @@
                 document.getElementById('stock-qty').value = '';
                 document.getElementById('stock-desc').value = '';
                 window.setStockType('masuk'); 
-                await fetchDatabase();
+                await fetchDatabase(false);
                 alert('✅ Mutasi stok berhasil diperbarui!');
             } catch(error) {
                 alert('❌ Gagal menyimpan stok. Pastikan internet stabil.');
@@ -1666,7 +1663,7 @@
             if(confirm('Yakin ingin menghapus riwayat mutasi stok ini? (Sisa Stok akan terkalkulasi ulang)')) {
                 try {
                     await fetch(`${RTDB_URL}/sge_stock_ledger/${dbId}.json`, { method: 'DELETE' });
-                    fetchDatabase();
+                    fetchDatabase(false);
                 } catch(e) { alert('Gagal menghapus data.'); }
             }
         }
@@ -2032,7 +2029,6 @@
             if (sortedMonthTx.length === 0) {
                 document.getElementById('af-table-body').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi di bulan ini.</td></tr>`;
                 document.getElementById('af-table-foot').innerHTML = '';
-                safeCreateIcons();
                 return;
             }
 
@@ -2063,8 +2059,6 @@
                     <td class="p-4 text-right text-rose-600 text-base">${formatRp(totalOut)}</td>
                 </tr>
             `;
-
-            safeCreateIcons(); 
         };
 
         window.renderRiwayat = function() {
@@ -2211,7 +2205,6 @@
             btnSubmit.innerHTML = '🔄 PERBARUI DATA TRANSAKSI';
             btnSubmit.className = "w-full py-4 mt-4 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2";
             
-            safeCreateIcons();
             window.switchTab('input');
         };
 
@@ -2222,7 +2215,7 @@
                     if (!response.ok) throw new Error("Gagal hapus");
                     
                     alert("✅ Data berhasil dihapus dari server!");
-                    fetchDatabase(); 
+                    fetchDatabase(false); 
                 } catch(err) {
                     alert(`❌ Gagal menghapus!\nPastikan internet menyala dan stabil.`);
                 }
@@ -2283,7 +2276,7 @@
                 document.getElementById('input-date').valueAsDate = new Date();
                 editingDbId = null;
                 
-                await fetchDatabase(); 
+                await fetchDatabase(false); 
                 window.switchTab('riwayat');
 
             } catch (error) {
