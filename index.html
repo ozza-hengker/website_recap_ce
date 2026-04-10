@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Keuangan CE 2026</title>
     
+    <!-- Favicon untuk mengubah icon browser tab (dokumen kosong) menjadi Logo CE -->
+    <link rel="icon" type="image/png" href="LOGO%20CE.png">
+    
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=laporan_af_100_persen_121';
+        const currentVersion = 'v=laporan_af_100_persen_122_pdhjumbo';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -792,6 +795,7 @@
         let transactions = []; 
         let editingDbId = null;  
         let pdhBemSold = 0;
+        let pdhBemSoldJumbo = 0;
 
         const kasNames = ['Ozza', 'Azka', 'Alin', 'Niken', 'Michael', 'Samuel', 'Boyjes', 'Alya', 'Aliyah', 'Puty', 'Fairuz', 'Qila', 'Rafi', 'Zaki'];
         const kasMonths = ['Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -946,7 +950,10 @@
 
                 if (resPdh.ok) {
                     const dataPdh = await resPdh.json();
-                    if(dataPdh && dataPdh.sold !== undefined) pdhBemSold = dataPdh.sold;
+                    if(dataPdh) {
+                        if(dataPdh.sold !== undefined) pdhBemSold = dataPdh.sold;
+                        if(dataPdh.soldJumbo !== undefined) pdhBemSoldJumbo = dataPdh.soldJumbo;
+                    }
                 }
 
                 if (resLedger.ok) {
@@ -1539,19 +1546,26 @@
         // DASHBOARD, LAPORAN, KAS CE, RIWAYAT TRANSAKSI KEUANGAN
         // =========================================================================
         
-        window.updatePdhBem = async function(val) {
-            let sold = parseInt(val) || 0;
+        window.updatePdhBem = async function() {
+            let sold = parseInt(document.getElementById('input-pdh-sold').value) || 0;
+            let soldJumbo = parseInt(document.getElementById('input-pdh-sold-jumbo').value) || 0;
+            
             if (sold < 0) sold = 0;
-            if (sold > 146) sold = 146; 
+            if (soldJumbo < 0) soldJumbo = 0;
             
             document.getElementById('input-pdh-sold').value = sold;
+            if(document.getElementById('input-pdh-sold-jumbo')) {
+                document.getElementById('input-pdh-sold-jumbo').value = soldJumbo;
+            }
+            
             pdhBemSold = sold;
+            pdhBemSoldJumbo = soldJumbo;
 
             try {
                 await fetch(`${RTDB_URL}/pdh_bem.json`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sold: sold })
+                    body: JSON.stringify({ sold: sold, soldJumbo: soldJumbo })
                 });
                 renderLaporanAF(); 
             } catch(e) { alert("❌ Gagal menyimpan data PDH BEM."); }
@@ -1754,9 +1768,9 @@
             const stratAfShare = stratNet > 0 ? stratNet : 0;
             const stratCeShare = stratNet > 0 ? 0 : stratNet;
 
-            // PDH BEM (100% ke AF)
-            const pdhOmset = pdhBemSold * 240000;
-            const pdhModal = pdhBemSold * 220000;
+            // PDH BEM (100% ke AF) + Logic PDH Jumbo
+            const pdhOmset = (pdhBemSold * 240000) + (pdhBemSoldJumbo * 250000);
+            const pdhModal = (pdhBemSold * 220000) + (pdhBemSoldJumbo * 230000);
             const pdhNet = pdhOmset - pdhModal;
             const pdhAfShare = pdhNet > 0 ? pdhNet : 0;
             const pdhCeShare = pdhNet > 0 ? 0 : pdhNet;
@@ -1857,22 +1871,38 @@
                         </h3>
                         <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
                     </div>
+                    
                     <div class="flex flex-col justify-center relative z-10 mb-4">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total PDH Terjual (Max 146)</label>
-                        <div class="flex items-center gap-3">
-                            ${currentUser === 'GLOBAL' 
-                                ? `<input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" max="146" onchange="updatePdhBem(this.value)" class="w-20 p-2 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-black text-lg text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">` 
-                                : `<div class="w-20 p-2 bg-indigo-50 border border-indigo-100 rounded-lg font-black text-lg text-indigo-400 text-center shadow-sm cursor-not-allowed">${pdhBemSold}</div>`
-                            }
-                            <span class="text-xs font-bold text-slate-500">x <span class="text-indigo-600 text-base">Rp 240k</span></span>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Reguler (S - XL)</label>
+                                <div class="flex items-center gap-2">
+                                    ${currentUser === 'GLOBAL' 
+                                        ? `<input type="number" id="input-pdh-sold" value="${pdhBemSold}" min="0" onchange="updatePdhBem()" class="w-16 p-2 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-black text-sm text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">` 
+                                        : `<div class="w-16 p-2 bg-indigo-50 border border-indigo-100 rounded-lg font-black text-sm text-indigo-400 text-center shadow-sm cursor-not-allowed">${pdhBemSold}</div>`
+                                    }
+                                    <span class="text-[10px] font-bold text-slate-500">x <span class="text-indigo-600 text-xs">240k</span></span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Jumbo (> XL)</label>
+                                <div class="flex items-center gap-2">
+                                    ${currentUser === 'GLOBAL' 
+                                        ? `<input type="number" id="input-pdh-sold-jumbo" value="${pdhBemSoldJumbo}" min="0" onchange="updatePdhBem()" class="w-16 p-2 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 font-black text-sm text-indigo-700 outline-none text-center shadow-sm transition-all hover:border-indigo-400">` 
+                                        : `<div class="w-16 p-2 bg-indigo-50 border border-indigo-100 rounded-lg font-black text-sm text-indigo-400 text-center shadow-sm cursor-not-allowed">${pdhBemSoldJumbo}</div>`
+                                    }
+                                    <span class="text-[10px] font-bold text-slate-500">x <span class="text-indigo-600 text-xs">250k</span></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2 relative z-10">
                         <div class="flex justify-between text-[11px] font-medium text-slate-500">
-                            <span>Pemasukan (240k)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
+                            <span>Pemasukan Total</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
                         </div>
                         <div class="flex justify-between text-[11px] font-medium text-slate-500 pb-2 border-b border-slate-100">
-                            <span>Modal (Beli 220k)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
+                            <span>Modal Pembelian</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
                         </div>
                         <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
                             <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
