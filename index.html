@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=pdh_af_view_only_121';
+        const currentVersion = 'v=super_fast_loading_122';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -995,13 +995,15 @@
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
         // =========================================================================
-        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING 
+        // FETCH DATA MURNI DENGAN TIMEOUT & ERROR CATCHING (SUPER FAST VERSION)
         // =========================================================================
         async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                const response = await fetch(url, { ...options, signal: controller.signal });
+                // Tambahkan parameter anti-cache '?t=' agar tidak menyangkut di memori HP
+                const cacheBusterUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
+                const response = await fetch(cacheBusterUrl, { ...options, signal: controller.signal });
                 clearTimeout(id);
                 return response;
             } catch (error) {
@@ -1015,76 +1017,59 @@
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
 
-                // Tembak Endpoint secara bersamaan
-                const [resTx, resKas, resLedger, resFines, resPdhTracker] = await Promise.all([
-                    fetchWithTimeout(`${RTDB_URL}/transactions.json`),
-                    fetchWithTimeout(`${RTDB_URL}/kas_ce.json`),
-                    fetchWithTimeout(`${RTDB_URL}/sge_stock_ledger.json`),
-                    fetchWithTimeout(`${RTDB_URL}/ce_fines.json`),
-                    fetchWithTimeout(`${RTDB_URL}/pdh_tracker.json`)
-                ]);
+                // TEMBAK 1 KALI SAJA LANGSUNG KE AKAR DATABASE (JAUH LEBIH CEPAT!)
+                const response = await fetchWithTimeout(`${RTDB_URL}/.json`);
                 
                 // CEK APAKAH DITOLAK FIREBASE
-                if (!resTx.ok || resTx.status === 401 || resTx.status === 403) {
+                if (!response.ok || response.status === 401 || response.status === 403) {
                     throw new Error("Akses Ditolak Firebase (Rules Expired)");
                 }
 
-                if (resTx.ok) {
-                    const dataTx = await resTx.json();
-                    let fetchedTxs = [];
-                    if (dataTx) {
-                        for (let key in dataTx) { fetchedTxs.push({ dbId: key, ...dataTx[key] }); }
-                    }
-                    const newHash = JSON.stringify(fetchedTxs);
-                    if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
+                const allData = await response.json() || {};
+
+                // 1. Parsing Transaksi
+                let fetchedTxs = [];
+                if (allData.transactions) {
+                    for (let key in allData.transactions) { fetchedTxs.push({ dbId: key, ...allData.transactions[key] }); }
+                }
+                const newHash = JSON.stringify(fetchedTxs);
+                if (newHash !== currentDataHash) { transactions = fetchedTxs; currentDataHash = newHash; }
+
+                // 2. Parsing Kas CE
+                const newKasHash = JSON.stringify(allData.kas_ce || {});
+                if (newKasHash !== currentKasHash) { kasData = allData.kas_ce || {}; currentKasHash = newKasHash; }
+
+                // 3. Parsing Ledger Stok SGE
+                let fetchedLedger = [];
+                if (allData.sge_stock_ledger) {
+                    for (let key in allData.sge_stock_ledger) { fetchedLedger.push({ dbId: key, ...allData.sge_stock_ledger[key] }); }
+                }
+                const newLedgerHash = JSON.stringify(fetchedLedger);
+                if (newLedgerHash !== currentStockLedgerHash) { 
+                    stockLedger = fetchedLedger; 
+                    currentStockLedgerHash = newLedgerHash; 
                 }
 
-                if (resKas.ok) {
-                    const dataKas = await resKas.json();
-                    const newKasHash = JSON.stringify(dataKas);
-                    if (newKasHash !== currentKasHash) { kasData = dataKas || {}; currentKasHash = newKasHash; }
+                // 4. Parsing Denda
+                let fetchedFines = [];
+                if (allData.ce_fines) {
+                    for (let key in allData.ce_fines) { fetchedFines.push({ dbId: key, ...allData.ce_fines[key] }); }
+                }
+                const newFinesHash = JSON.stringify(fetchedFines);
+                if (newFinesHash !== currentFinesHash) {
+                    ceFines = fetchedFines;
+                    currentFinesHash = newFinesHash;
                 }
 
-                if (resLedger.ok) {
-                    const dataLedger = await resLedger.json();
-                    let fetchedLedger = [];
-                    if (dataLedger) {
-                        for (let key in dataLedger) { fetchedLedger.push({ dbId: key, ...dataLedger[key] }); }
-                    }
-                    const newLedgerHash = JSON.stringify(fetchedLedger);
-                    if (newLedgerHash !== currentStockLedgerHash) { 
-                        stockLedger = fetchedLedger; 
-                        currentStockLedgerHash = newLedgerHash; 
-                    }
+                // 5. Parsing Tracker PDH
+                let fetchedPdh = [];
+                if (allData.pdh_tracker) {
+                    for (let key in allData.pdh_tracker) { fetchedPdh.push({ dbId: key, ...allData.pdh_tracker[key] }); }
                 }
-
-                if (resFines.ok) {
-                    const dataFines = await resFines.json();
-                    let fetchedFines = [];
-                    if (dataFines) {
-                        for (let key in dataFines) { fetchedFines.push({ dbId: key, ...dataFines[key] }); }
-                    }
-                    const newFinesHash = JSON.stringify(fetchedFines);
-                    if (newFinesHash !== currentFinesHash) {
-                        ceFines = fetchedFines;
-                        currentFinesHash = newFinesHash;
-                    }
-                }
-
-                if (resPdhTracker.ok) {
-                    const dataPdhTracker = await resPdhTracker.json();
-                    let fetchedPdh = [];
-                    if (dataPdhTracker) {
-                        for (let key in dataPdhTracker) { fetchedPdh.push({ dbId: key, ...dataPdhTracker[key] }); }
-                    } else {
-                        // Jika kosong saat baru dibuat
-                        fetchedPdh = [];
-                    }
-                    const newPdhHash = JSON.stringify(fetchedPdh);
-                    if (newPdhHash !== currentPdhTrackerHash) {
-                        pdhTrackerData = fetchedPdh;
-                        currentPdhTrackerHash = newPdhHash;
-                    }
+                const newPdhHash = JSON.stringify(fetchedPdh);
+                if (newPdhHash !== currentPdhTrackerHash) {
+                    pdhTrackerData = fetchedPdh;
+                    currentPdhTrackerHash = newPdhHash;
                 }
 
                 if (currentUser) updateUI();
@@ -1099,7 +1084,7 @@
                 console.error("Fetch DB Gagal:", err);
                 const dbStatusEl = document.getElementById('db-status');
                 if(dbStatusEl) {
-                    dbStatusEl.innerHTML = '❌ Akses Ditolak (Rules)';
+                    dbStatusEl.innerHTML = '❌ Akses Ditolak/Lemot';
                     dbStatusEl.className = 'bg-rose-500/20 text-rose-300 text-[11px] font-bold px-2 py-0.5 rounded border border-rose-500/30 flex items-center gap-1 shadow-sm';
                 }
             } finally {
@@ -2256,7 +2241,10 @@
                 
                 const fetchMethod = editingDbId ? 'PATCH' : 'POST';
 
-                const response = await fetch(fetchUrl, {
+                // Gunakan cacheBusterUrl jika sedang mengirim data dengan timeout
+                const cacheBusterUrl = fetchUrl.includes('?') ? `${fetchUrl}&t=${Date.now()}` : `${fetchUrl}?t=${Date.now()}`;
+                
+                const response = await fetch(cacheBusterUrl, {
                     method: fetchMethod,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(txData)
@@ -2282,6 +2270,51 @@
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
             }
         });
+
+        window.switchTab = function(tabId) {
+            if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan', 'rekapsge'].includes(tabId)) {
+                tabId = 'laporan'; // Paksa ke laporan jika AF mencoba buka tab terlarang
+            } else if (currentUser !== 'GLOBAL' && currentUser !== 'AF' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce' || tabId === 'pdh')) {
+                if (currentUser === 'SGE MARKET HUB' && (tabId === 'stoksge' || tabId === 'rekapsge' || tabId === 'pdh')) {
+                    // Allowed
+                } else {
+                    tabId = 'input';
+                }
+            }
+
+            if (tabId !== 'input' && editingDbId) {
+                editingDbId = null;
+                const submitBtn = document.getElementById('btn-submit');
+                submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
+                submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
+                document.getElementById('input-nominal').value = '';
+                document.getElementById('input-desc').value = '';
+                safeCreateIcons();
+            }
+
+            activeTab = tabId;
+
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('border-teal-600', 'text-teal-700', 'bg-teal-50/50');
+                el.classList.add('border-transparent', 'text-slate-500');
+            });
+
+            const activeTabEl = document.getElementById('tab-' + tabId);
+            if (activeTabEl) {
+                activeTabEl.classList.remove('border-transparent', 'text-slate-500');
+                activeTabEl.classList.add('border-teal-600', 'text-teal-700', 'bg-teal-50/50');
+            }
+
+            if(tabId === 'laporan') window.renderLaporanAF();
+            if(tabId === 'kasce') window.renderKasTable();
+            if(tabId === 'stoksge') renderSgeStockTab();
+            if(tabId === 'rekapsge') window.renderRekapSge(); 
+            if(tabId === 'pdh') window.renderPdhTable(); 
+            if(tabId === 'riwayat') window.renderRiwayat(); 
+        }
 
     </script>
 </body>
