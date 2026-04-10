@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=tracker_pdh_otomatis_119';
+        const currentVersion = 'v=pdh_upsize_af100_120';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -30,7 +30,7 @@
         .sticky-col { position: sticky; left: 0; background-color: white; z-index: 10; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         .sticky-col-header { position: sticky; left: 0; background-color: #f8fafc; z-index: 11; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         
-        /* Custom Scrollbar untuk Box Stok SGE */
+        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
@@ -151,7 +151,6 @@
                 <button onclick="switchTab('rekapsge')" id="tab-rekapsge" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Rekap SGE
                 </button>
-                <!-- MENU BARU: PENDATAAN PDH -->
                 <button onclick="switchTab('pdh')" id="tab-pdh" class="nav-tab flex items-center gap-2 py-4 px-6 font-bold border-b-[3px] transition-colors whitespace-nowrap border-transparent text-slate-500 hover:text-teal-700 hover:bg-teal-50/30 hidden">
                     <i data-lucide="shirt" class="w-5 h-5"></i> Data PDH
                 </button>
@@ -419,7 +418,7 @@
                     </div>
                 </div>
 
-                <!-- FITUR BARU: SISTEM DENDA KETERLAMBATAN -->
+                <!-- SISTEM DENDA KETERLAMBATAN -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8 border-t border-slate-200 pt-8">
                     <div class="lg:col-span-1 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden h-fit">
                         <div class="bg-rose-50 p-5 border-b border-rose-100 flex items-center gap-3">
@@ -520,7 +519,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    <!-- KOLOM KIRI: FORM MUTASI STOK (Mirip Form Transaksi Uang) -->
+                    <!-- KOLOM KIRI: FORM MUTASI STOK -->
                     <div class="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden h-fit">
                         <div class="bg-purple-50 p-6 border-b border-purple-100 flex items-center gap-3">
                             <div class="bg-purple-200 p-2 rounded-xl text-purple-700"><i data-lucide="package-plus"></i></div>
@@ -592,7 +591,7 @@
                         </form>
                     </div>
 
-                    <!-- KOLOM KANAN: SISA STOK TERKINI (Mirip Mockup Kanan) -->
+                    <!-- KOLOM KANAN: SISA STOK TERKINI -->
                     <div class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[700px] overflow-hidden">
                         <div class="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
                             <div class="text-purple-600 bg-purple-100 p-2 rounded-full"><i data-lucide="boxes"></i></div>
@@ -752,7 +751,7 @@
                         <p id="pdh-sum-profit" class="text-xl font-black text-emerald-600">Rp 0</p>
                     </div>
                     <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-sm flex flex-col justify-center">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Setor ke AF (50%)</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Setor ke AF (100%)</p>
                         <p id="pdh-sum-af" class="text-xl font-black text-white">Rp 0</p>
                     </div>
                 </div>
@@ -775,6 +774,7 @@
                                 <tr class="bg-white text-slate-500 text-[10px] uppercase tracking-wider border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                                     <th class="p-4 font-bold w-12 text-center">No</th>
                                     <th class="p-4 font-bold">Nama Lengkap & Jabatan</th>
+                                    <th class="p-4 font-bold text-center">Ukuran > XL (+10k)</th>
                                     <th class="p-4 font-bold text-center">Status Pembayaran</th>
                                     <th class="p-4 font-bold text-right">Uang Masuk</th>
                                     <th class="p-4 font-bold text-center w-16">Aksi</th>
@@ -897,11 +897,6 @@
 
         // Data Tracker PDH
         let pdhTrackerData = [];
-
-        // Konstanta Harga PDH
-        const PDH_HARGA_JUAL = 240000;
-        const PDH_HARGA_VENDOR = 220000;
-        const PDH_PROFIT = PDH_HARGA_JUAL - PDH_HARGA_VENDOR;
 
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
@@ -1263,7 +1258,7 @@
         }
 
         // =========================================================================
-        // FITUR BARU: PENDATAAN PDH OTOMATIS
+        // FITUR BARU: PENDATAAN PDH OTOMATIS & UPSIZE +10K
         // =========================================================================
         
         window.toggleImportBox = function() {
@@ -1293,6 +1288,7 @@
                             name: name,
                             role: role,
                             status: 0, // 0: Belum, 1: DP, 2: Lunas
+                            isUpSize: false, // Default ukuran biasa
                             createdAt: Date.now()
                         });
                     }
@@ -1308,7 +1304,6 @@
             btn.disabled = true;
 
             try {
-                // Post masing-masing (bisa di-optimize tapi karena firebase rest biasa, kita post Promise.all)
                 const promises = newEntries.map(data => 
                     fetch(`${RTDB_URL}/pdh_tracker.json`, {
                         method: 'POST',
@@ -1333,7 +1328,7 @@
         window.updatePdhStatus = async function(dbId, selectElement) {
             const newStatus = parseInt(selectElement.value);
             
-            selectElement.className = "w-full py-1.5 px-2 text-xs font-black rounded-lg border outline-none cursor-pointer appearance-none shadow-sm transition-colors animate-pulse " + 
+            selectElement.className = "w-36 py-1.5 px-2 text-xs font-black rounded-lg border outline-none cursor-pointer text-center shadow-sm transition-colors animate-pulse " + 
                 (newStatus === 0 ? 'bg-rose-50 text-rose-600 border-rose-200' : 
                 (newStatus === 2 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'));
 
@@ -1347,15 +1342,35 @@
                 if(!response.ok) throw new Error("Gagal Patch");
                 selectElement.classList.remove('animate-pulse');
                 
-                // Update local memory to recalculate immediately without waiting for next sync
                 const idx = pdhTrackerData.findIndex(p => p.dbId === dbId);
                 if(idx !== -1) pdhTrackerData[idx].status = newStatus;
                 
-                window.renderPdhTable(); // Re-render summary
-                // Pdh Laporan AF will auto update on next fetch or view switch
+                window.renderPdhTable(); 
+                if(typeof window.renderLaporanAF === 'function') window.renderLaporanAF();
             } catch(e) {
                 alert(`❌ Gagal menyimpan status PDH.`);
                 selectElement.classList.remove('animate-pulse');
+            }
+        };
+
+        // FITUR BARU: TOGGLE SIZE > XL (+10k)
+        window.togglePdhUpSize = async function(dbId, isChecked) {
+            try {
+                // Update local memory untuk UI responsif
+                const idx = pdhTrackerData.findIndex(p => p.dbId === dbId);
+                if(idx !== -1) pdhTrackerData[idx].isUpSize = isChecked;
+                
+                window.renderPdhTable(); 
+                if(typeof window.renderLaporanAF === 'function') window.renderLaporanAF();
+
+                // Background sync
+                await fetch(`${RTDB_URL}/pdh_tracker/${dbId}.json`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isUpSize: isChecked })
+                });
+            } catch(e) {
+                alert(`❌ Gagal menyimpan status ukuran.`);
             }
         };
 
@@ -1372,10 +1387,12 @@
             const searchQ = (document.getElementById('pdh-search')?.value || '').toLowerCase();
             
             let totalPesanan = pdhTrackerData.length;
+            let upSizeCount = pdhTrackerData.filter(p => p.isUpSize).length;
+
             let totalTerkumpul = 0;
-            let tagihanVendor = totalPesanan * 220000;
-            let estimasiLaba = totalPesanan * 20000; // Jika lunas semua
-            let setorAf = estimasiLaba / 2;
+            let tagihanVendor = (totalPesanan * 220000) + (upSizeCount * 10000);
+            let estimasiLaba = totalPesanan * 20000; // Keuntungan murni per baju tetap 20rb
+            let setorAf = estimasiLaba; // Karena 100% Setor AF
 
             let tbodyHTML = '';
             
@@ -1384,8 +1401,9 @@
             
             let no = 1;
             sortedData.forEach(p => {
+                // Hitung Uang Masuk
                 if (p.status === 1) totalTerkumpul += 120000;
-                else if (p.status === 2) totalTerkumpul += 240000;
+                else if (p.status === 2) totalTerkumpul += (240000 + (p.isUpSize ? 10000 : 0));
 
                 if(searchQ && !p.name.toLowerCase().includes(searchQ) && !p.role.toLowerCase().includes(searchQ)) return;
 
@@ -1395,7 +1413,7 @@
 
                 let uangMasukText = '-';
                 if (p.status === 1) uangMasukText = '<span class="text-amber-600">Rp 120.000</span>';
-                if (p.status === 2) uangMasukText = '<span class="text-emerald-600">Rp 240.000</span>';
+                if (p.status === 2) uangMasukText = `<span class="text-emerald-600">Rp ${p.isUpSize ? '250.000' : '240.000'}</span>`;
 
                 tbodyHTML += `
                     <tr class="hover:bg-slate-50 transition-colors">
@@ -1404,11 +1422,16 @@
                             <div class="font-bold text-slate-800">${p.name}</div>
                             <div class="text-[10px] uppercase font-black text-slate-400 mt-0.5">${p.role}</div>
                         </td>
+                        <td class="p-4 text-center align-middle">
+                            <label class="inline-flex items-center cursor-pointer p-1 hover:bg-slate-100 rounded-md transition-colors">
+                                <input type="checkbox" ${p.isUpSize ? 'checked' : ''} onchange="togglePdhUpSize('${p.dbId}', this.checked)" class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                            </label>
+                        </td>
                         <td class="p-4 text-center">
                             <select onchange="updatePdhStatus('${p.dbId}', this)" class="w-36 py-1.5 px-2 text-xs font-black rounded-lg border ${colorClass} outline-none cursor-pointer text-center shadow-sm transition-colors">
                                 <option value="0" ${p.status === 0 ? 'selected' : ''}>❌ BELUM BAYAR</option>
                                 <option value="1" ${p.status === 1 ? 'selected' : ''}>⏳ DP (120K)</option>
-                                <option value="2" ${p.status === 2 ? 'selected' : ''}>✅ LUNAS (240K)</option>
+                                <option value="2" ${p.status === 2 ? 'selected' : ''}>✅ LUNAS (${p.isUpSize ? '250K' : '240K'})</option>
                             </select>
                         </td>
                         <td class="p-4 text-right font-black">${uangMasukText}</td>
@@ -1420,7 +1443,7 @@
             });
 
             if (pdhTrackerData.length === 0) {
-                tbodyHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Data kosong. Silakan import dari Excel.</td></tr>`;
+                tbodyHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Data kosong. Silakan import dari Excel.</td></tr>`;
             }
 
             document.getElementById('pdh-table-body').innerHTML = tbodyHTML;
@@ -1552,7 +1575,7 @@
         }
 
         // =========================================================================
-        // MANAJEMEN STOK SGE (LEDGER BASED) MOCKUP KIYA
+        // MANAJEMEN STOK SGE (LEDGER BASED)
         // =========================================================================
         
         window.setStockType = function(type) {
@@ -1828,7 +1851,7 @@
         // =========================================================================
         // DASHBOARD, LAPORAN, KAS CE, RIWAYAT TRANSAKSI KEUANGAN
         // =========================================================================
-        
+
         function renderKasTable() {
             let totalKasTerkumpul = 0;
             let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
@@ -2016,7 +2039,7 @@
             const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const sgeNet = sgeIn - sgeOut;
             const sgeAfShare = sgeNet > 0 ? sgeNet : 0;
-            const sgeCeShare = sgeNet > 0 ? 0 : sgeNet; 
+            const sgeCeShare = 0; 
 
             // STRATEGIC PARTNERSHIP (100% ke AF)
             const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
@@ -2024,15 +2047,17 @@
             const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const stratNet = stratIn - stratOut;
             const stratAfShare = stratNet > 0 ? stratNet : 0;
-            const stratCeShare = stratNet > 0 ? 0 : stratNet;
+            const stratCeShare = 0;
 
-            // PDH BEM - SYNC OTOMATIS DARI TRACKER PDH (JUMLAH ANGGOTA)
+            // PDH BEM - SYNC OTOMATIS DARI TRACKER PDH (TERMASUK UPSIZE 10k)
             const totalPesananPdh = pdhTrackerData.length;
-            const pdhOmset = totalPesananPdh * PDH_HARGA_JUAL;
-            const pdhModal = totalPesananPdh * PDH_HARGA_VENDOR;
+            const upSizeCount = pdhTrackerData.filter(p => p.isUpSize).length;
+            
+            const pdhOmset = (totalPesananPdh * PDH_HARGA_JUAL) + (upSizeCount * 10000);
+            const pdhModal = (totalPesananPdh * PDH_HARGA_VENDOR) + (upSizeCount * 10000);
             const pdhNet = pdhOmset - pdhModal;
-            const pdhAfShare = pdhNet > 0 ? (pdhNet/2) : 0; // PDH tetap 50:50 karena untung paten
-            const pdhCeShare = pdhNet > 0 ? (pdhNet/2) : 0;
+            const pdhAfShare = pdhNet > 0 ? pdhNet : 0; // 100% Setor AF
+            const pdhCeShare = 0;
 
             const grandTotalBersih = sgeNet + stratNet + pdhNet;
             const grandTotalSetorAF = sgeAfShare + stratAfShare + pdhAfShare;
@@ -2128,27 +2153,27 @@
                         <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
                             PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Otomatis dari Pendataan</span>
                         </h3>
-                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">Rasio 50:50</span>
+                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
                     </div>
                     <div class="flex flex-col justify-center relative z-10 mb-4">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total Pesanan PDH Terdaftar</label>
                         <div class="flex items-center gap-3">
                             <div class="w-20 p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-black text-lg text-indigo-700 text-center shadow-sm cursor-not-allowed">${totalPesananPdh}</div>
-                            <span class="text-xs font-bold text-slate-500">x <span class="text-indigo-600 text-base">Rp 240k</span></span>
+                            <span class="text-xs font-bold text-slate-500">Anggota</span>
                         </div>
                     </div>
                     <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2 relative z-10">
                         <div class="flex justify-between text-[11px] font-medium text-slate-500">
-                            <span>Estimasi Pemasukan (240k)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
+                            <span>Estimasi Pemasukan (Total)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
                         </div>
                         <div class="flex justify-between text-[11px] font-medium text-slate-500 pb-2 border-b border-slate-100">
-                            <span>Tagihan Vendor (220k)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
+                            <span>Tagihan Vendor (Total)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
                         </div>
                         <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
                             <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-2">
-                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (50%)</span>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
                             <span class="font-bold text-slate-700 text-sm">${formatRp(pdhCeShare)}</span>
                         </div>
                         <div class="flex justify-between items-center pt-1">
@@ -2431,7 +2456,7 @@
 
         window.switchTab = function(tabId) {
             if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan', 'rekapsge'].includes(tabId)) {
-                tabId = 'laporan'; // Paksa ke laporan jika AF mencoba buka tab terlarang
+                tabId = 'laporan'; 
             } else if (currentUser !== 'GLOBAL' && currentUser !== 'AF' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce' || tabId === 'pdh')) {
                 if (currentUser === 'SGE MARKET HUB' && (tabId === 'stoksge' || tabId === 'rekapsge' || tabId === 'pdh')) {
                     // Allowed
