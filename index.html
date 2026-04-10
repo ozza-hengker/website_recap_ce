@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=pdh_upsize_af100_120';
+        const currentVersion = 'v=pdh_af_view_only_121';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -711,7 +711,7 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="toggleImportBox()" class="bg-white border border-slate-200 text-slate-600 py-2.5 px-4 rounded-xl hover:bg-slate-50 transition-all font-bold shadow-sm text-sm flex items-center gap-2">
+                        <button id="btn-import-pdh" onclick="toggleImportBox()" class="bg-white border border-slate-200 text-slate-600 py-2.5 px-4 rounded-xl hover:bg-slate-50 transition-all font-bold shadow-sm text-sm flex items-center gap-2">
                             <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Import Excel
                         </button>
                     </div>
@@ -897,6 +897,11 @@
 
         // Data Tracker PDH
         let pdhTrackerData = [];
+
+        // KONSTANTA HARGA PDH
+        const PDH_HARGA_JUAL = 240000;
+        const PDH_HARGA_VENDOR = 220000;
+        const PDH_PROFIT = PDH_HARGA_JUAL - PDH_HARGA_VENDOR;
 
         const formatRp = (angka) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
@@ -1154,6 +1159,10 @@
                 document.getElementById('dashboard-charts-container').classList.remove('hidden'); 
                 document.getElementById('proker-selector-container').classList.remove('hidden');
                 document.getElementById('filter-proker-riwayat').classList.remove('hidden');
+                
+                const importBtn = document.getElementById('btn-import-pdh');
+                if(importBtn) importBtn.classList.remove('hidden');
+                
                 window.switchTab('dashboard');
             } else if (role === 'AF') {
                 document.getElementById('tab-dashboard').classList.remove('hidden');
@@ -1162,11 +1171,15 @@
                 document.getElementById('tab-kasce').classList.add('hidden'); 
                 document.getElementById('tab-stoksge').classList.add('hidden'); 
                 document.getElementById('tab-rekapsge').classList.remove('hidden'); 
-                document.getElementById('tab-pdh').classList.add('hidden'); 
+                document.getElementById('tab-pdh').classList.remove('hidden'); 
                 document.getElementById('dashboard-charts-container').classList.remove('hidden'); 
                 document.getElementById('proker-selector-container').classList.add('hidden');
                 document.getElementById('filter-proker-riwayat').classList.remove('hidden');
                 document.getElementById('filter-proker-riwayat').value = 'SEMUA';
+                
+                const importBtn = document.getElementById('btn-import-pdh');
+                if(importBtn) importBtn.classList.add('hidden');
+
                 window.switchTab('laporan');
             } else if (role === 'SGE MARKET HUB') {
                 document.getElementById('tab-dashboard').classList.add('hidden');
@@ -1181,6 +1194,10 @@
                 document.getElementById('filter-proker-riwayat').classList.add('hidden');
                 document.getElementById('filter-proker-riwayat').value = 'SEMUA';
                 document.getElementById('input-proker').value = role;
+                
+                const importBtn = document.getElementById('btn-import-pdh');
+                if(importBtn) importBtn.classList.remove('hidden');
+
                 window.switchTab('input');
             } else {
                 document.getElementById('tab-dashboard').classList.add('hidden');
@@ -1223,6 +1240,7 @@
                 try { renderDashboard(); } catch(e) {}
                 try { renderLaporanAF(); } catch(e) {}
                 try { window.renderRekapSge(); } catch(e) {}
+                try { window.renderPdhTable(); } catch(e) {}
             }
             if (currentUser === 'GLOBAL' || currentUser === 'SGE MARKET HUB') {
                 try { renderSgeStockTab(); } catch(e) {}
@@ -1415,6 +1433,36 @@
                 if (p.status === 1) uangMasukText = '<span class="text-amber-600">Rp 120.000</span>';
                 if (p.status === 2) uangMasukText = `<span class="text-emerald-600">Rp ${p.isUpSize ? '250.000' : '240.000'}</span>`;
 
+                let actionHtml = '';
+                let statusHtml = '';
+                let upsizeHtml = '';
+
+                if (currentUser === 'AF') {
+                    // MODE VIEW-ONLY UNTUK AF
+                    upsizeHtml = p.isUpSize ? '<span class="text-xs font-bold text-indigo-600">Ya (+10k)</span>' : '<span class="text-xs text-slate-400">Tidak</span>';
+                    
+                    let statusBadge = '';
+                    if (p.status === 0) statusBadge = '<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded-md text-xs font-bold">❌ BELUM BAYAR</span>';
+                    else if (p.status === 1) statusBadge = '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">⏳ DP (120K)</span>';
+                    else if (p.status === 2) statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">✅ LUNAS (${p.isUpSize ? '250K' : '240K'})</span>`;
+                    
+                    statusHtml = statusBadge;
+                    actionHtml = `<span class="text-slate-300 text-xs">🔒</span>`;
+                } else {
+                    // MODE EDIT UNTUK GLOBAL / SGE
+                    upsizeHtml = `<label class="inline-flex items-center cursor-pointer p-1 hover:bg-slate-100 rounded-md transition-colors">
+                                    <input type="checkbox" ${p.isUpSize ? 'checked' : ''} onchange="togglePdhUpSize('${p.dbId}', this.checked)" class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                                  </label>`;
+                    
+                    statusHtml = `<select onchange="updatePdhStatus('${p.dbId}', this)" class="w-36 py-1.5 px-2 text-xs font-black rounded-lg border ${colorClass} outline-none cursor-pointer text-center shadow-sm transition-colors">
+                                    <option value="0" ${p.status === 0 ? 'selected' : ''}>❌ BELUM BAYAR</option>
+                                    <option value="1" ${p.status === 1 ? 'selected' : ''}>⏳ DP (120K)</option>
+                                    <option value="2" ${p.status === 2 ? 'selected' : ''}>✅ LUNAS (${p.isUpSize ? '250K' : '240K'})</option>
+                                  </select>`;
+                    
+                    actionHtml = `<button onclick="deletePdhMember('${p.dbId}')" class="text-slate-400 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                }
+
                 tbodyHTML += `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-slate-500 font-bold">${no++}</td>
@@ -1422,22 +1470,10 @@
                             <div class="font-bold text-slate-800">${p.name}</div>
                             <div class="text-[10px] uppercase font-black text-slate-400 mt-0.5">${p.role}</div>
                         </td>
-                        <td class="p-4 text-center align-middle">
-                            <label class="inline-flex items-center cursor-pointer p-1 hover:bg-slate-100 rounded-md transition-colors">
-                                <input type="checkbox" ${p.isUpSize ? 'checked' : ''} onchange="togglePdhUpSize('${p.dbId}', this.checked)" class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
-                            </label>
-                        </td>
-                        <td class="p-4 text-center">
-                            <select onchange="updatePdhStatus('${p.dbId}', this)" class="w-36 py-1.5 px-2 text-xs font-black rounded-lg border ${colorClass} outline-none cursor-pointer text-center shadow-sm transition-colors">
-                                <option value="0" ${p.status === 0 ? 'selected' : ''}>❌ BELUM BAYAR</option>
-                                <option value="1" ${p.status === 1 ? 'selected' : ''}>⏳ DP (120K)</option>
-                                <option value="2" ${p.status === 2 ? 'selected' : ''}>✅ LUNAS (${p.isUpSize ? '250K' : '240K'})</option>
-                            </select>
-                        </td>
+                        <td class="p-4 text-center align-middle">${upsizeHtml}</td>
+                        <td class="p-4 text-center">${statusHtml}</td>
                         <td class="p-4 text-right font-black">${uangMasukText}</td>
-                        <td class="p-4 text-center">
-                            <button onclick="deletePdhMember('${p.dbId}')" class="text-slate-400 hover:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </td>
+                        <td class="p-4 text-center">${actionHtml}</td>
                     </tr>
                 `;
             });
@@ -1852,7 +1888,7 @@
         // DASHBOARD, LAPORAN, KAS CE, RIWAYAT TRANSAKSI KEUANGAN
         // =========================================================================
 
-        function renderKasTable() {
+        window.renderKasTable = function() {
             let totalKasTerkumpul = 0;
             let thead = `<tr><th class="p-3 sticky-col-header text-left text-xs font-black text-slate-500 uppercase tracking-wider">Nama Anggota</th>`;
             kasMonths.forEach(m => {
@@ -1936,7 +1972,7 @@
         let barChartObj = null;
         let pieChartObj = null;
 
-        function renderDashboard() {
+        window.renderDashboard = function() {
             let totalIn = 0, totalOut = 0;
             let cardsHTML = ''; 
             const chartLabels = []; const chartDataIn = []; const chartDataOut = []; const chartDataBalance = [];
@@ -2021,214 +2057,7 @@
             } catch (error) {}
         }
 
-        window.renderLaporanAF = function() {
-            const monthVal = document.getElementById('report-month').value; 
-            if(!monthVal) return;
-
-            const [year, month] = monthVal.split('-');
-            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            const prettyMonth = `${monthNames[parseInt(month)-1]} ${year}`;
-            document.getElementById('af-table-month-label').innerText = `Bulan: ${prettyMonth}`;
-
-            // Sembunyikan transaksi FILKOMMERCH dari Laporan AF karena 100% milik CE (menunggu dekanat)
-            const filteredTx = transactions.filter(t => t.date.startsWith(monthVal) && t.proker !== 'FILKOMMERCH');
-
-            // SGE MARKET HUB (100% ke AF)
-            const sgeTx = filteredTx.filter(t => t.proker === 'SGE MARKET HUB');
-            const sgeIn = sgeTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-            const sgeOut = sgeTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
-            const sgeNet = sgeIn - sgeOut;
-            const sgeAfShare = sgeNet > 0 ? sgeNet : 0;
-            const sgeCeShare = 0; 
-
-            // STRATEGIC PARTNERSHIP (100% ke AF)
-            const stratTx = filteredTx.filter(t => t.proker === 'STRATEGIC PARTNERSHIP');
-            const stratIn = stratTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-            const stratOut = stratTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
-            const stratNet = stratIn - stratOut;
-            const stratAfShare = stratNet > 0 ? stratNet : 0;
-            const stratCeShare = 0;
-
-            // PDH BEM - SYNC OTOMATIS DARI TRACKER PDH (TERMASUK UPSIZE 10k)
-            const totalPesananPdh = pdhTrackerData.length;
-            const upSizeCount = pdhTrackerData.filter(p => p.isUpSize).length;
-            
-            const pdhOmset = (totalPesananPdh * PDH_HARGA_JUAL) + (upSizeCount * 10000);
-            const pdhModal = (totalPesananPdh * PDH_HARGA_VENDOR) + (upSizeCount * 10000);
-            const pdhNet = pdhOmset - pdhModal;
-            const pdhAfShare = pdhNet > 0 ? pdhNet : 0; // 100% Setor AF
-            const pdhCeShare = 0;
-
-            const grandTotalBersih = sgeNet + stratNet + pdhNet;
-            const grandTotalSetorAF = sgeAfShare + stratAfShare + pdhAfShare;
-            const grandTotalPorsiCE = sgeCeShare + stratCeShare + pdhCeShare;
-
-            document.getElementById('af-grand-total').innerHTML = `
-                <div class="bg-slate-800 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 opacity-10"><i data-lucide="pie-chart" class="w-48 h-48"></i></div>
-                    <div class="flex items-center gap-4 mb-4 md:mb-0 relative z-10 w-full md:w-auto">
-                        <div class="bg-white/10 p-4 rounded-2xl border border-white/20 backdrop-blur-sm">
-                            <i data-lucide="award" class="w-10 h-10 text-emerald-400"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-1">Grand Total Setoran AF</h3>
-                            <p class="text-3xl md:text-4xl font-black text-emerald-400 drop-shadow-md">${formatRp(grandTotalSetorAF)}</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-6 md:gap-8 relative z-10 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
-                        <div>
-                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Laba Bersih BEM</p>
-                            <p class="text-xl font-bold text-white">${formatRp(grandTotalBersih)}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Porsi CE</p>
-                            <p class="text-xl font-bold text-cyan-300">${formatRp(grandTotalPorsiCE)}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('af-summary-cards').innerHTML = `
-                <div class="bg-gradient-to-br from-teal-50 to-white rounded-3xl p-8 border border-teal-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="store" class="w-24 h-24 text-teal-900"></i></div>
-                    <div class="flex items-center justify-between mb-6 relative z-10">
-                        <h3 class="font-black text-teal-900 text-xl">SGE MARKET HUB</h3>
-                        <span class="bg-teal-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
-                    </div>
-                    <div class="space-y-2 mb-6 relative z-10">
-                        <div class="flex justify-between text-sm font-medium text-slate-600">
-                            <span>Pemasukan Kotor</span> <span class="text-emerald-600 font-bold">${formatRp(sgeIn)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm font-medium text-slate-600 pb-3 border-b border-teal-100">
-                            <span>Pengeluaran Modal</span> <span class="text-rose-500 font-bold">-${formatRp(sgeOut)}</span>
-                        </div>
-                        <div class="flex justify-between text-lg font-black text-slate-800 pt-1">
-                            <span>Laba Bersih</span> <span>${formatRp(sgeNet)}</span>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-5 border border-teal-100 shadow-sm space-y-3 relative z-10">
-                        <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
-                            <span class="font-bold text-slate-700">${formatRp(sgeCeShare)}</span>
-                        </div>
-                        <div class="flex justify-between items-center pt-1">
-                            <span class="text-sm font-black text-teal-600 uppercase tracking-wide">Setor ke AF</span>
-                            <span class="font-black text-teal-600 text-2xl">${formatRp(sgeAfShare)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-br from-cyan-50 to-white rounded-3xl p-8 border border-cyan-100 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="handshake" class="w-24 h-24 text-cyan-900"></i></div>
-                    <div class="flex items-center justify-between mb-6 relative z-10">
-                        <h3 class="font-black text-cyan-900 text-xl">STRATEGIC P.</h3>
-                        <span class="bg-cyan-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
-                    </div>
-                    <div class="space-y-2 mb-6 relative z-10">
-                        <div class="flex justify-between text-sm font-medium text-slate-600">
-                            <span>Pemasukan Kotor</span> <span class="text-emerald-600 font-bold">${formatRp(stratIn)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm font-medium text-slate-600 pb-3 border-b border-cyan-100">
-                            <span>Pengeluaran Operasional</span> <span class="text-rose-500 font-bold">-${formatRp(stratOut)}</span>
-                        </div>
-                        <div class="flex justify-between text-lg font-black text-slate-800 pt-1">
-                            <span>Laba Bersih</span> <span>${formatRp(stratNet)}</span>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-5 border border-cyan-100 shadow-sm space-y-3 relative z-10">
-                        <div class="flex justify-between items-center border-b border-slate-50 pb-2">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
-                            <span class="font-bold text-slate-700">${formatRp(stratCeShare)}</span>
-                        </div>
-                        <div class="flex justify-between items-center pt-1">
-                            <span class="text-sm font-black text-cyan-600 uppercase tracking-wide">Setor ke AF</span>
-                            <span class="font-black text-cyan-600 text-2xl">${formatRp(stratAfShare)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-8 border border-indigo-100 shadow-sm relative overflow-hidden md:col-span-2">
-                    <div class="absolute top-0 right-0 p-6 opacity-10"><i data-lucide="shirt" class="w-24 h-24 text-indigo-900"></i></div>
-                    <div class="flex items-center justify-between mb-6 relative z-10">
-                        <h3 class="font-black text-indigo-900 text-xl flex items-center gap-2">
-                            PDH BEM <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-1 rounded-md font-bold uppercase tracking-widest">Otomatis dari Pendataan</span>
-                        </h3>
-                        <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">100% ke AF</span>
-                    </div>
-                    <div class="flex flex-col justify-center relative z-10 mb-4">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Total Pesanan PDH Terdaftar</label>
-                        <div class="flex items-center gap-3">
-                            <div class="w-20 p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-black text-lg text-indigo-700 text-center shadow-sm cursor-not-allowed">${totalPesananPdh}</div>
-                            <span class="text-xs font-bold text-slate-500">Anggota</span>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm space-y-2 relative z-10">
-                        <div class="flex justify-between text-[11px] font-medium text-slate-500">
-                            <span>Estimasi Pemasukan (Total)</span> <span class="text-emerald-600 font-bold">${formatRp(pdhOmset)}</span>
-                        </div>
-                        <div class="flex justify-between text-[11px] font-medium text-slate-500 pb-2 border-b border-slate-100">
-                            <span>Tagihan Vendor (Total)</span> <span class="text-rose-500 font-bold">-${formatRp(pdhModal)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm font-black text-slate-700 pt-1 pb-2 border-b border-slate-100">
-                            <span>Laba Bersih</span> <span>${formatRp(pdhNet)}</span>
-                        </div>
-                        <div class="flex justify-between items-center pt-2">
-                            <span class="text-[11px] font-bold text-slate-400 uppercase">Porsi CE (0%)</span>
-                            <span class="font-bold text-slate-700 text-sm">${formatRp(pdhCeShare)}</span>
-                        </div>
-                        <div class="flex justify-between items-center pt-1">
-                            <span class="text-[11px] font-black text-indigo-600 uppercase tracking-wide">Setor ke AF</span>
-                            <span class="font-black text-indigo-600 text-xl">${formatRp(pdhAfShare)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            let totalIn = 0;
-            let totalOut = 0;
-            let tbodyHTML = '';
-
-            const sortedMonthTx = [...filteredTx].sort((a,b) => a.date.localeCompare(b.date));
-
-            if (sortedMonthTx.length === 0) {
-                document.getElementById('af-table-body').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada transaksi di bulan ini.</td></tr>`;
-                document.getElementById('af-table-foot').innerHTML = '';
-                safeCreateIcons();
-                return;
-            }
-
-            sortedMonthTx.forEach(t => {
-                const isMasuk = t.type === 'pemasukan';
-                if(isMasuk) totalIn += t.nominal;
-                else totalOut += t.nominal;
-
-                const badgeColor = t.proker === 'SGE MARKET HUB' ? 'bg-teal-100 text-teal-700 border-teal-200' : 
-                                   t.proker === 'STRATEGIC PARTNERSHIP' ? 'bg-cyan-100 text-cyan-700 border-cyan-200' : 'bg-slate-200 text-slate-700 border-slate-300';
-
-                tbodyHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-4 text-slate-500">${t.date}</td>
-                        <td class="p-4"><span class="${badgeColor} border px-2 py-1 rounded-md text-[10px] uppercase font-black tracking-wide">${t.proker}</span></td>
-                        <td class="p-4 text-slate-700">${t.category !== 'UMUM' ? `<span class="font-bold">`+t.category+`</span> - ` : ''}${t.desc}</td>
-                        <td class="p-4 text-right font-bold text-emerald-600">${isMasuk ? formatRp(t.nominal) : '-'}</td>
-                        <td class="p-4 text-right font-bold text-rose-500">${!isMasuk ? formatRp(t.nominal) : '-'}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('af-table-body').innerHTML = tbodyHTML;
-            document.getElementById('af-table-foot').innerHTML = `
-                <tr>
-                    <td colspan="3" class="p-4 text-right uppercase tracking-wider text-xs">Total Transaksi Bulan Ini:</td>
-                    <td class="p-4 text-right text-emerald-600 text-base">${formatRp(totalIn)}</td>
-                    <td class="p-4 text-right text-rose-600 text-base">${formatRp(totalOut)}</td>
-                </tr>
-            `;
-
-            safeCreateIcons(); 
-        }
-
-        function renderRiwayat() {
+        window.renderRiwayat = function() {
             let tbodyHTML = '';
             let filteredTx = transactions;
 
@@ -2453,51 +2282,6 @@
                 submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
             }
         });
-
-        window.switchTab = function(tabId) {
-            if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan', 'rekapsge'].includes(tabId)) {
-                tabId = 'laporan'; 
-            } else if (currentUser !== 'GLOBAL' && currentUser !== 'AF' && (tabId === 'dashboard' || tabId === 'laporan' || tabId === 'kasce' || tabId === 'pdh')) {
-                if (currentUser === 'SGE MARKET HUB' && (tabId === 'stoksge' || tabId === 'rekapsge' || tabId === 'pdh')) {
-                    // Allowed
-                } else {
-                    tabId = 'input';
-                }
-            }
-
-            if (tabId !== 'input' && editingDbId) {
-                editingDbId = null;
-                const submitBtn = document.getElementById('btn-submit');
-                submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
-                submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
-                document.getElementById('input-nominal').value = '';
-                document.getElementById('input-desc').value = '';
-                safeCreateIcons();
-            }
-
-            activeTab = tabId;
-
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.getElementById('view-' + tabId).classList.remove('hidden');
-
-            document.querySelectorAll('.nav-tab').forEach(el => {
-                el.classList.remove('border-teal-600', 'text-teal-700', 'bg-teal-50/50');
-                el.classList.add('border-transparent', 'text-slate-500');
-            });
-
-            const activeTabEl = document.getElementById('tab-' + tabId);
-            if (activeTabEl) {
-                activeTabEl.classList.remove('border-transparent', 'text-slate-500');
-                activeTabEl.classList.add('border-teal-600', 'text-teal-700', 'bg-teal-50/50');
-            }
-
-            if(tabId === 'laporan') renderLaporanAF();
-            if(tabId === 'kasce') renderKasTable();
-            if(tabId === 'stoksge') renderSgeStockTab();
-            if(tabId === 'rekapsge') window.renderRekapSge(); 
-            if(tabId === 'pdh') window.renderPdhTable(); 
-            if(tabId === 'riwayat') renderRiwayat(); 
-        }
 
     </script>
 </body>
