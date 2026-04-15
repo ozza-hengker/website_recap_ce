@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=laporan_af_100_persen_122_profitloss_akurat';
+        const currentVersion = 'v=laporan_af_100_persen_122_profitloss_akurat_editable';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -569,11 +569,13 @@
                                     <input type="number" id="stock-qty" min="1" required placeholder="0" oninput="calculateNominalStock()" class="w-full p-3.5 text-xl font-black text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-colors shadow-inner"/>
                                 </div>
                                 <div id="nominal-display-container" class="hidden animate-in fade-in flex flex-col justify-end">
-                                    <label id="nominal-display-label" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Auto Hitung</label>
-                                    <div id="nominal-display-box" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-black text-sm flex items-center shadow-inner">
-                                        <span id="nominal-display-value">Rp 0</span>
+                                    <label id="nominal-display-label" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Estimasi (Bisa Diedit)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="font-black text-slate-400 text-sm">Rp</span>
+                                        </div>
+                                        <input type="text" inputmode="numeric" id="hidden-calculated-nominal" oninput="formatRupiahInput(this)" class="w-full pl-10 pr-3 py-3.5 bg-white border border-slate-300 rounded-xl font-black text-sm text-slate-700 shadow-inner outline-none focus:ring-2 transition-all" value="0">
                                     </div>
-                                    <input type="hidden" id="hidden-calculated-nominal" value="0">
                                 </div>
                             </div>
 
@@ -872,10 +874,10 @@
             "GOYANG LIDAH MANGO": { buy: 2400, sell: 3000 },
             "CONE TARO": { buy: 4800, sell: 6000 },
             // Minuman (Sesuai Excel)
-            "FANTA 390 ML ALL VARIANT": { buy: 4083, sell: 5500 },
+            "FANTA 390 ML ALL VARIANT": { buy: 49000/12, sell: 5500 },
             "ADES MINERALE": { buy: 1875, sell: 3500 },
-            "FREASTEA 350ML ALL VARIANT": { buy: 3250, sell: 4500 },
-            "NUTRIBOOST 300ML ALL VARIANT": { buy: 5558, sell: 6500 },
+            "FREASTEA 350ML ALL VARIANT": { buy: 39000/12, sell: 4500 },
+            "NUTRIBOOST 300ML ALL VARIANT": { buy: 66700/12, sell: 6500 },
             "PULPY 300ML": { buy: 4100, sell: 5500 },
             "FANTA SODA WATER 250ML": { buy: 4100, sell: 5500 },
             "SPRITE WATER LYMON 425ML": { buy: 3800, sell: 5000 },
@@ -970,9 +972,7 @@
             const type = document.getElementById('stock-type').value;
             const container = document.getElementById('nominal-display-container');
             const label = document.getElementById('nominal-display-label');
-            const box = document.getElementById('nominal-display-box');
-            const text = document.getElementById('nominal-display-value');
-            const hiddenInput = document.getElementById('hidden-calculated-nominal');
+            const inputField = document.getElementById('hidden-calculated-nominal');
 
             if (type === 'keluar' || type === 'hilang') {
                 const item = document.getElementById('stock-item').value;
@@ -983,21 +983,23 @@
                 const total = qty * price;
 
                 container.classList.remove('hidden');
-                text.innerText = formatRp(total);
-                hiddenInput.value = total;
+                
+                // Isi input field lalu format jadi rupiah
+                inputField.value = total;
+                window.formatRupiahInput(inputField);
 
                 if (type === 'keluar') {
-                    label.innerText = 'Estimasi Pendapatan (Rp)';
-                    label.className = 'block text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1';
-                    box.className = 'w-full p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 font-black text-sm flex items-center shadow-inner';
+                    label.innerText = 'Omset Laku (Bisa Diedit)';
+                    label.className = 'block text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1';
+                    inputField.className = 'w-full pl-10 pr-3 py-3.5 bg-blue-50 border border-blue-300 rounded-xl font-black text-sm text-blue-700 shadow-inner outline-none focus:ring-2 focus:ring-blue-500 transition-all';
                 } else {
-                    label.innerText = 'Total Kerugian (Rp)';
-                    label.className = 'block text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-1';
-                    box.className = 'w-full p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 font-black text-sm flex items-center shadow-inner';
+                    label.innerText = 'Total Rugi (Bisa Diedit)';
+                    label.className = 'block text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1';
+                    inputField.className = 'w-full pl-10 pr-3 py-3.5 bg-rose-50 border border-rose-300 rounded-xl font-black text-sm text-rose-700 shadow-inner outline-none focus:ring-2 focus:ring-rose-500 transition-all';
                 }
             } else {
                 container.classList.add('hidden');
-                hiddenInput.value = 0;
+                inputField.value = '';
             }
         };
 
@@ -1404,9 +1406,9 @@
             let lossNominal = 0;
             let salesNominal = 0;
             if (type === 'hilang') {
-                lossNominal = parseInt(document.getElementById('hidden-calculated-nominal').value) || 0;
+                lossNominal = getCleanNominal('hidden-calculated-nominal') || 0;
             } else if (type === 'keluar') {
-                salesNominal = parseInt(document.getElementById('hidden-calculated-nominal').value) || 0;
+                salesNominal = getCleanNominal('hidden-calculated-nominal') || 0;
             }
 
             const data = {
