@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=laporan_af_100_persen_121';
+        const currentVersion = 'v=laporan_af_100_persen_121_cashflow';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -39,7 +39,7 @@
             body { background-color: white !important; }
             header, nav, button, .no-print, canvas { display: none !important; }
             #app-screen, #view-laporan { display: block !important; }
-            .view-section:not(#view-laporan) { display: none !important; }
+            .view-section:not(#view-laporan):not(#view-rekapsge) { display: none !important; }
             .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { box-shadow: none !important; }
             .border { border-color: #e2e8f0 !important; }
         }
@@ -516,7 +516,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    <!-- KOLOM KIRI: FORM MUTASI STOK (Mirip Form Transaksi Uang) -->
+                    <!-- KOLOM KIRI: FORM MUTASI STOK -->
                     <div class="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden h-fit">
                         <div class="bg-purple-50 p-6 border-b border-purple-100 flex items-center gap-3">
                             <div class="bg-purple-200 p-2 rounded-xl text-purple-700"><i data-lucide="package-plus"></i></div>
@@ -588,7 +588,7 @@
                         </form>
                     </div>
 
-                    <!-- KOLOM KANAN: SISA STOK TERKINI (Mirip Mockup Kanan) -->
+                    <!-- KOLOM KANAN: SISA STOK TERKINI -->
                     <div class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[700px] overflow-hidden">
                         <div class="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
                             <div class="text-purple-600 bg-purple-100 p-2 rounded-full"><i data-lucide="boxes"></i></div>
@@ -671,6 +671,63 @@
                     <div class="bg-white p-5 rounded-2xl border border-rose-200 shadow-sm flex flex-col justify-center bg-rose-50/30">
                         <p class="text-[10px] text-rose-500 font-bold uppercase tracking-widest mb-1">Total Kerugian</p>
                         <p id="rekap-sge-loss-nominal" class="text-2xl font-black text-rose-600">Rp 0</p>
+                    </div>
+                </div>
+
+                <!-- FITUR BARU: CASH FLOW & PROFIT LOSS SGE -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <!-- Panel Cash Flow & Total Loss -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-slate-50 p-4 border-b border-slate-200 flex items-center gap-2">
+                            <i data-lucide="calculator" class="w-5 h-5 text-slate-500"></i>
+                            <h3 class="font-bold text-slate-800">Cash Flow & Total Loss</h3>
+                        </div>
+                        <div class="p-5 space-y-3 text-sm">
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-medium text-slate-600">IN (Kas Masuk)</span>
+                                <span id="rekap-sge-in" class="font-black text-emerald-600">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-medium text-slate-600">OUT (Kas Keluar/Modal)</span>
+                                <span id="rekap-sge-out" class="font-black text-rose-600">Rp 0</span>
+                            </div>
+                            <div class="pt-2">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Expected Revenue (Omset + Hilang)</span>
+                                    <span id="rekap-sge-expected-rev" class="font-bold text-slate-700">Rp 0</span>
+                                </div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Uang Masuk Kas (IN)</span>
+                                    <span id="rekap-sge-uang-masuk" class="font-bold text-emerald-600">Rp 0</span>
+                                </div>
+                                <div class="flex justify-between mt-3 p-3 bg-rose-50 rounded-xl border border-rose-100">
+                                    <span class="text-sm font-black text-rose-700 uppercase">Total Loss (Selisih Uang)</span>
+                                    <span id="rekap-sge-total-loss" class="font-black text-rose-700">Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Profit Loss -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-fit">
+                        <div class="bg-slate-50 p-4 border-b border-slate-200 flex items-center gap-2">
+                            <i data-lucide="trending-down" class="w-5 h-5 text-slate-500"></i>
+                            <h3 class="font-bold text-slate-800">Profit Loss Summary</h3>
+                        </div>
+                        <div class="p-5 space-y-3 text-sm">
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-medium text-slate-600">Real Profit (IN - OUT)</span>
+                                <span id="rekap-sge-real-profit" class="font-black text-emerald-600">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-medium text-slate-600">Expected Profit (Exp. Rev - OUT)</span>
+                                <span id="rekap-sge-expected-profit" class="font-black text-blue-600">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between mt-3 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                                <span class="text-sm font-black text-amber-700 uppercase">Profit Loss (Kehilangan Laba)</span>
+                                <span id="rekap-sge-profit-loss" class="font-black text-amber-700">Rp 0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1512,6 +1569,38 @@
             document.getElementById('rekap-sge-loss-qty').innerText = totalLossQty + " Pcs";
             document.getElementById('rekap-sge-loss-nominal').innerText = formatRp(totalLossNominal);
 
+            // ==========================================
+            // TAMBAHKAN LOGIKA CASH FLOW & PROFIT LOSS DI SINI
+            // ==========================================
+            
+            // 1. Ambil transaksi kas SGE bulan ini
+            const sgeTxMonth = transactions.filter(t => t.proker === 'SGE MARKET HUB' && t.date.startsWith(monthVal));
+            const cashIn = sgeTxMonth.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+            const cashOut = sgeTxMonth.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+
+            // 2. Kalkulasi Total Loss
+            const expectedRevenue = totalSalesNominal + totalLossNominal;
+            const totalLoss = expectedRevenue - cashIn;
+
+            // 3. Kalkulasi Profit Loss
+            const realProfit = cashIn - cashOut;
+            const expectedProfit = expectedRevenue - cashOut;
+            const profitLoss = expectedProfit - realProfit;
+
+            // 4. Update ke tampilan UI
+            document.getElementById('rekap-sge-in').innerText = formatRp(cashIn);
+            document.getElementById('rekap-sge-out').innerText = formatRp(cashOut);
+            
+            document.getElementById('rekap-sge-expected-rev').innerText = formatRp(expectedRevenue);
+            document.getElementById('rekap-sge-uang-masuk').innerText = formatRp(cashIn);
+            document.getElementById('rekap-sge-total-loss').innerText = formatRp(totalLoss);
+
+            document.getElementById('rekap-sge-real-profit').innerText = formatRp(realProfit);
+            document.getElementById('rekap-sge-expected-profit').innerText = formatRp(expectedProfit);
+            document.getElementById('rekap-sge-profit-loss').innerText = formatRp(profitLoss);
+
+            // ==========================================
+
             let tbodyHTML = '';
             const items = Object.keys(itemMap).sort();
             
@@ -1533,6 +1622,7 @@
             }
 
             document.getElementById('rekapsge-table-body').innerHTML = tbodyHTML;
+            safeCreateIcons();
         };
 
         // =========================================================================
