@@ -7,7 +7,7 @@
     
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=laporan_af_100_persen_121_cashflow';
+        const currentVersion = 'v=laporan_af_100_persen_122_profitloss_akurat';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -720,7 +720,7 @@
                                 <span id="rekap-sge-real-profit" class="font-black text-emerald-600">Rp 0</span>
                             </div>
                             <div class="flex justify-between border-b border-slate-100 pb-2">
-                                <span class="font-medium text-slate-600">Expected Profit (Exp. Rev - OUT)</span>
+                                <span class="font-medium text-slate-600">Expected Profit (Berdasarkan Modal & Omset)</span>
                                 <span id="rekap-sge-expected-profit" class="font-black text-blue-600">Rp 0</span>
                             </div>
                             <div class="flex justify-between mt-3 p-3 bg-amber-50 rounded-xl border border-amber-100">
@@ -809,33 +809,82 @@
             "SNAK & BARANG": ["POP MIE", "PDH KKN", "PLASTIK / KRESEK BESAR", "LAKBAN", "BARANG LAINNYA"]
         };
 
-        // DATABASE HARGA SGE UNTUK KALKULASI KERUGIAN DAN OMSET
+        // DATABASE HARGA SGE (UPDATE: KINI MENGANDUNG HARGA BELI & HARGA JUAL)
         const sgeItemPrices = {
-            "3 IN 1 COLOR CUP": 10000, "BANANA CRISPY": 5000, "BERRY CHOCO MAX CONE": 6000, "BINGO (Chocolate Stick)": 3500,
-            "BLUEBERY COOKIES": 6000, "BROWN SUGAR BOBA": 6000, "CEREAL MILK CRISPY": 4000, "CHOCO MALT": 3500,
-            "CHOCO MEETS OATS": 8000, "CHOCO MELT CONE": 6000, "CHOCOLATE STRIKE": 10000, "CHOCOLATECRISPY": 5500,
-            "CONE BINGO": 6000, "CONE STRAWBERY": 6000, "CORN WONDERLAND": 4000, "2 COLOURS STICK": 3000,
-            "CRISPY BALL": 5500, "DOUBLE MIKI COCHOLATE": 2000, "TARO CRISPY": 4500, "FRUITY ROLL": 4000,
-            "FRUIZZY BLUBERRY": 4500, "HISTERIA MATCHA": 8500, "GRAPE FRUIZZY": 2500, "HISTERIA": 8500,
-            "VANILA WITH COOKIES CUP": 5000, "HISTERIA PEACH": 8500, "JERUK": 3000, "JUJU APPLE": 3000,
-            "KOPI CRISPY": 4500, "LOLLI PINEAPPLE": 3000, "MACCHIATO COFFEE": 12000, "MANGOSLUSH": 5000,
-            "MARKISA": 2000, "MAXCONE": 6000, "MIKI MIKI SUSU": 2000, "MILK MELON": 4000, "MOCHI BANANA": 4000,
-            "MOCHI COKLAT": 4000, "MOCHI DURIAN": 4000, "MOCHI KLEPON": 4000, "MOCHI PEACH": 4000, "MOCHI VANILLA": 4000,
-            "MOONG BEAN": 4000, "NANAS": 3000, "RIA RIA KACANG HIJAU": 3000, "SEMANGKA": 5000, "STRAW-CRISPY": 4500,
-            "MOCHI MANGO": 4000, "DOUBLE CRISPY": 5000, "SUNDAE COKLAT CUP": 6500, "SUNDAE STRAW CUP": 6500,
-            "SWEETCORN": 4500, "BALL COOKIES & CREAM": 5000, "MIKI MIKI CEREAL": 2000, "LEMON SWEET TEA": 2500,
-            "CHOCOMALT CONE HIJAU": 6000, "VANILA BERRY CONE": 6000, "CONE JAGUNG": 6000, "GOYANG LIDAH MANGO": 3000,
-            "CONE TARO": 6000,
-            // Minuman (Harga Baru Sesuai Price List)
-            "FANTA 390 ML ALL VARIANT": 5500,
-            "ADES MINERALE": 3500,
-            "FREASTEA 350ML ALL VARIANT": 4500,
-            "NUTRIBOOST 300ML ALL VARIANT": 6500,
-            "PULPY 300ML": 5500,
-            "FANTA SODA WATER 250ML": 5500,
-            "SPRITE WATER LYMON 425ML": 5000,
+            "3 IN 1 COLOR CUP": { buy: 8000, sell: 10000 },
+            "BANANA CRISPY": { buy: 4000, sell: 5000 },
+            "BERRY CHOCO MAX CONE": { buy: 4800, sell: 6000 },
+            "BINGO (Chocolate Stick)": { buy: 2800, sell: 3500 },
+            "BLUEBERY COOKIES": { buy: 4800, sell: 6000 },
+            "BROWN SUGAR BOBA": { buy: 4800, sell: 6000 },
+            "CEREAL MILK CRISPY": { buy: 3200, sell: 4000 },
+            "CHOCO MALT": { buy: 2800, sell: 3500 },
+            "CHOCO MEETS OATS": { buy: 6400, sell: 8000 },
+            "CHOCO MELT CONE": { buy: 4800, sell: 6000 },
+            "CHOCOLATE STRIKE": { buy: 8000, sell: 10000 },
+            "CHOCOLATECRISPY": { buy: 4200, sell: 5500 }, // Sesuai Excel
+            "CONE BINGO": { buy: 4800, sell: 6000 },
+            "CONE STRAWBERY": { buy: 4800, sell: 6000 },
+            "CORN WONDERLAND": { buy: 3200, sell: 4000 },
+            "2 COLOURS STICK": { buy: 2400, sell: 3000 },
+            "CRISPY BALL": { buy: 4200, sell: 5500 }, // Sesuai Excel
+            "DOUBLE MIKI COCHOLATE": { buy: 1600, sell: 2000 },
+            "TARO CRISPY": { buy: 3600, sell: 4500 },
+            "FRUITY ROLL": { buy: 3200, sell: 4000 },
+            "FRUIZZY BLUBERRY": { buy: 3600, sell: 4500 },
+            "HISTERIA MATCHA": { buy: 6800, sell: 8500 },
+            "GRAPE FRUIZZY": { buy: 2000, sell: 2500 },
+            "HISTERIA": { buy: 6800, sell: 8500 },
+            "VANILA WITH COOKIES CUP": { buy: 4000, sell: 5000 },
+            "HISTERIA PEACH": { buy: 6800, sell: 8500 },
+            "JERUK": { buy: 2400, sell: 3000 },
+            "JUJU APPLE": { buy: 2400, sell: 3000 },
+            "KOPI CRISPY": { buy: 3300, sell: 4500 }, // Sesuai Excel
+            "LOLLI PINEAPPLE": { buy: 2400, sell: 3000 },
+            "MACCHIATO COFFEE": { buy: 9600, sell: 12000 },
+            "MANGOSLUSH": { buy: 4000, sell: 5000 },
+            "MARKISA": { buy: 1600, sell: 2000 },
+            "MAXCONE": { buy: 4800, sell: 6000 },
+            "MIKI MIKI SUSU": { buy: 1600, sell: 2000 },
+            "MILK MELON": { buy: 3200, sell: 4000 },
+            "MOCHI BANANA": { buy: 3200, sell: 4000 },
+            "MOCHI COKLAT": { buy: 3200, sell: 4000 },
+            "MOCHI DURIAN": { buy: 3200, sell: 4000 },
+            "MOCHI KLEPON": { buy: 3200, sell: 4000 },
+            "MOCHI PEACH": { buy: 3200, sell: 4000 },
+            "MOCHI VANILLA": { buy: 3200, sell: 4000 },
+            "MOONG BEAN": { buy: 3200, sell: 4000 },
+            "NANAS": { buy: 2400, sell: 3000 },
+            "RIA RIA KACANG HIJAU": { buy: 2400, sell: 3000 },
+            "SEMANGKA": { buy: 4000, sell: 5000 },
+            "STRAW-CRISPY": { buy: 3300, sell: 4500 }, // Sesuai Excel
+            "MOCHI MANGO": { buy: 3200, sell: 4000 },
+            "DOUBLE CRISPY": { buy: 4000, sell: 5000 },
+            "SUNDAE COKLAT CUP": { buy: 5200, sell: 6500 },
+            "SUNDAE STRAW CUP": { buy: 5200, sell: 6500 },
+            "SWEETCORN": { buy: 2450, sell: 4500 }, // Sesuai Excel
+            "BALL COOKIES & CREAM": { buy: 4000, sell: 5000 },
+            "MIKI MIKI CEREAL": { buy: 1600, sell: 2000 },
+            "LEMON SWEET TEA": { buy: 2000, sell: 2500 },
+            "CHOCOMALT CONE HIJAU": { buy: 4800, sell: 6000 },
+            "VANILA BERRY CONE": { buy: 4800, sell: 6000 },
+            "CONE JAGUNG": { buy: 4800, sell: 6000 },
+            "GOYANG LIDAH MANGO": { buy: 2400, sell: 3000 },
+            "CONE TARO": { buy: 4800, sell: 6000 },
+            // Minuman (Sesuai Excel)
+            "FANTA 390 ML ALL VARIANT": { buy: 4083, sell: 5500 },
+            "ADES MINERALE": { buy: 1875, sell: 3500 },
+            "FREASTEA 350ML ALL VARIANT": { buy: 3250, sell: 4500 },
+            "NUTRIBOOST 300ML ALL VARIANT": { buy: 5558, sell: 6500 },
+            "PULPY 300ML": { buy: 4100, sell: 5500 },
+            "FANTA SODA WATER 250ML": { buy: 4100, sell: 5500 },
+            "SPRITE WATER LYMON 425ML": { buy: 3800, sell: 5000 },
             // Lainnya
-            "POP MIE": 6000, "PDH KKN": 240000, "PLASTIK / KRESEK BESAR": 1000, "LAKBAN": 15000, "BARANG LAINNYA": 0
+            "POP MIE": { buy: 4500, sell: 6000 },
+            "PDH KKN": { buy: 220000, sell: 240000 },
+            "PLASTIK / KRESEK BESAR": { buy: 800, sell: 1000 },
+            "LAKBAN": { buy: 12000, sell: 15000 },
+            "BARANG LAINNYA": { buy: 0, sell: 0 }
         };
 
         const userCredentials = {
@@ -928,7 +977,9 @@
             if (type === 'keluar' || type === 'hilang') {
                 const item = document.getElementById('stock-item').value;
                 const qty = parseInt(document.getElementById('stock-qty').value) || 0;
-                const price = sgeItemPrices[item] || 0;
+                
+                // Gunakan Harga Jual (sell) untuk menghitung potensi kerugian / omset
+                const price = sgeItemPrices[item]?.sell || 0;
                 const total = qty * price;
 
                 container.classList.remove('hidden');
@@ -1447,7 +1498,9 @@
                         if (isRugi) {
                             qtyKeluar = `<span class="text-rose-600 font-bold">-${l.qty} <br><span class="text-[10px] bg-rose-100 px-1 rounded">(Rugi: ${formatRp(l.lossNominal)})</span></span>`;
                         } else {
-                            const sNom = l.salesNominal || (l.qty * (sgeItemPrices[l.item] || 0));
+                            // Hitung dengan harga jual
+                            const sellPrice = sgeItemPrices[l.item]?.sell || 0;
+                            const sNom = l.salesNominal || (l.qty * sellPrice);
                             qtyKeluar = `<span class="text-blue-600 font-bold">-${l.qty} <br><span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded">(Omset: ${formatRp(sNom)})</span></span>`;
                         }
                     }
@@ -1540,6 +1593,8 @@
             
             let totalSalesQty = 0;
             let totalSalesNominal = 0;
+            let totalExpectedProfit = 0; // Tambahan untuk Profit Loss
+
             let totalLossQty = 0;
             let totalLossNominal = 0;
 
@@ -1557,10 +1612,19 @@
                     totalLossNominal += l.lossNominal;
                 } else { 
                     itemMap[l.item].salesQty += l.qty;
-                    const sNom = l.salesNominal || (l.qty * (sgeItemPrices[l.item] || 0));
+                    
+                    // Ambil harga dari kamus baru
+                    const sellP = sgeItemPrices[l.item]?.sell || 0;
+                    const buyP = sgeItemPrices[l.item]?.buy || 0;
+                    
+                    const sNom = l.salesNominal || (l.qty * sellP);
+                    const itemExpectedProfit = sNom - (l.qty * buyP);
+
                     itemMap[l.item].salesNom += sNom;
+                    
                     totalSalesQty += l.qty;
                     totalSalesNominal += sNom;
+                    totalExpectedProfit += itemExpectedProfit; // Kumpulkan laba bersih
                 }
             });
 
@@ -1584,8 +1648,8 @@
 
             // 3. Kalkulasi Profit Loss
             const realProfit = cashIn - cashOut;
-            const expectedProfit = expectedRevenue - cashOut;
-            const profitLoss = expectedProfit - realProfit;
+            // Gunakan totalExpectedProfit asli (hasil dari Selisih Harga Jual dan Beli)
+            const profitLoss = totalExpectedProfit - realProfit;
 
             // 4. Update ke tampilan UI
             document.getElementById('rekap-sge-in').innerText = formatRp(cashIn);
@@ -1593,11 +1657,19 @@
             
             document.getElementById('rekap-sge-expected-rev').innerText = formatRp(expectedRevenue);
             document.getElementById('rekap-sge-uang-masuk').innerText = formatRp(cashIn);
-            document.getElementById('rekap-sge-total-loss').innerText = formatRp(totalLoss);
+            
+            // Format Loss Merah jika Surplus Kasih Tanda Plus
+            const tlEl = document.getElementById('rekap-sge-total-loss');
+            tlEl.innerText = totalLoss <= 0 ? `+${formatRp(Math.abs(totalLoss))}` : `-${formatRp(totalLoss)}`;
+            tlEl.className = totalLoss <= 0 ? 'font-black text-emerald-600' : 'font-black text-rose-700';
 
             document.getElementById('rekap-sge-real-profit').innerText = formatRp(realProfit);
-            document.getElementById('rekap-sge-expected-profit').innerText = formatRp(expectedProfit);
-            document.getElementById('rekap-sge-profit-loss').innerText = formatRp(profitLoss);
+            document.getElementById('rekap-sge-expected-profit').innerText = formatRp(totalExpectedProfit);
+            
+            // Format Profit Loss
+            const plEl = document.getElementById('rekap-sge-profit-loss');
+            plEl.innerText = profitLoss <= 0 ? `+${formatRp(Math.abs(profitLoss))}` : `-${formatRp(profitLoss)}`;
+            plEl.className = profitLoss <= 0 ? 'font-black text-emerald-600' : 'font-black text-amber-700';
 
             // ==========================================
 
