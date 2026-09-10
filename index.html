@@ -560,7 +560,7 @@
                             <p class="text-slate-500 dark:text-slate-400 font-medium">Buku pantauan iuran bulanan dan catatan denda keterlambatan rapat.</p>
                         </div>
                     </div>
-                    <div class="flex gap-3 overflow-x-auto pb-2 md:pb-0">
+                    <div id="kasce-summary-cards" class="flex gap-3 overflow-x-auto pb-2 md:pb-0">
                         <div class="bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-sm text-center">
                             <p class="text-[10px] text-emerald-700 dark:text-emerald-400 uppercase font-bold tracking-widest">Total Uang Masuk</p>
                             <p id="kasce-total-in" class="text-xl font-black text-emerald-600 dark:text-emerald-400">Rp 0</p>
@@ -1550,6 +1550,7 @@
                 if (kasOutFormCont) kasOutFormCont.classList.add('hidden');
                 if (kasOutTableCont) { kasOutTableCont.classList.remove('lg:col-span-2'); kasOutTableCont.classList.add('lg:col-span-3'); }
                 if (kasInfoBanner) kasInfoBanner.innerHTML = '<i data-lucide="shield-check" class="w-4 h-4 text-teal-500"></i> Tabel Iuran Bulanan: Pantauan status iuran kas seluruh anggota CE (Mode Transparansi Staff).';
+                document.getElementById('kasce-summary-cards')?.classList.add('hidden');
                 document.getElementById('btab-guest-login')?.classList.remove('hidden');
             } else {
                 if (guestBanner) guestBanner.classList.add('hidden');
@@ -1558,6 +1559,7 @@
                 if (kasOutFormCont) kasOutFormCont.classList.remove('hidden');
                 if (kasOutTableCont) { kasOutTableCont.classList.add('lg:col-span-2'); kasOutTableCont.classList.remove('lg:col-span-3'); }
                 if (kasInfoBanner) kasInfoBanner.innerHTML = '<i data-lucide="info" class="w-4 h-4 text-blue-500"></i> Tabel Iuran Bulanan: Ubah status cicilan di kotak bawah ini. Data akan otomatis tersimpan.';
+                document.getElementById('kasce-summary-cards')?.classList.remove('hidden');
                 document.getElementById('btab-guest-login')?.classList.add('hidden');
             }
             
