@@ -14,7 +14,7 @@
 
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=session_persist_v5';
+        const currentVersion = 'v=session_persist_v6';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -999,7 +999,7 @@
             updateDarkModeIcon();
         }
 
-        window.toggleDarkMode = function() {
+        function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
             localStorage.setItem('ce-dark-mode', isDark);
@@ -1009,6 +1009,7 @@
             if (pieChartObj) { pieChartObj.destroy(); pieChartObj = null; }
             if (currentUser === 'GLOBAL' || currentUser === 'AF') renderDashboard();
         }
+        window.toggleDarkMode = toggleDarkMode;
 
         function updateDarkModeIcon() {
             const icon = document.getElementById('dark-mode-icon');
@@ -1099,7 +1100,7 @@
         // ===================================================================================
         // EXPORT CSV
         // ===================================================================================
-        window.exportCSV = function() {
+        function exportCSV() {
             let filteredTx = transactions;
             if (currentUser !== 'GLOBAL' && currentUser !== 'AF') {
                 filteredTx = transactions.filter(t => t.proker === currentUser);
@@ -1122,6 +1123,7 @@
             link.click();
             showToast('File CSV berhasil di-download!', 'success');
         }
+        window.exportCSV = exportCSV;
 
         // ===================================================================================
         // STATE VARIABLES
@@ -1275,14 +1277,15 @@
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
         };
 
-        window.formatRupiahInput = function(inputElement) {
+        function formatRupiahInput(inputElement) {
             let value = inputElement.value.replace(/[^0-9]/g, '');
             if (value !== '') {
                 inputElement.value = new Intl.NumberFormat('id-ID').format(parseInt(value));
             } else {
                 inputElement.value = '';
             }
-        };
+        }
+        window.formatRupiahInput = formatRupiahInput;
 
         function getCleanNominal(inputId) {
             const val = document.getElementById(inputId)?.value || '';
@@ -1291,9 +1294,9 @@
 
         const today = new Date();
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
-        document.getElementById('report-month').value = currentMonthString;
+        if (document.getElementById('report-month')) document.getElementById('report-month').value = currentMonthString;
+        if (document.getElementById('input-date')) document.getElementById('input-date').valueAsDate = new Date();
         
-        document.getElementById('input-date').valueAsDate = new Date();
         const stockDateEl = document.getElementById('stock-date');
         if(stockDateEl) stockDateEl.valueAsDate = new Date();
         const rekapSgeMonthEl = document.getElementById('rekapsge-month');
@@ -1302,20 +1305,21 @@
         const kasOutDateEl = document.getElementById('kas-out-date');
         if(kasOutDateEl) kasOutDateEl.valueAsDate = new Date();
 
-        window.updateStockItemDropdown = function() {
-            const cat = document.getElementById('stock-category').value;
+        function updateStockItemDropdown() {
+            const cat = document.getElementById('stock-category')?.value;
             const itemSelect = document.getElementById('stock-item');
-            if(!itemSelect) return;
+            if(!itemSelect || !cat) return;
             
             let html = '';
             (detailedSgeItems[cat] || []).forEach(item => {
                 html += `<option value="${item}">${item}</option>`;
             });
             itemSelect.innerHTML = html;
-            window.calculateNominalStock(); 
-        };
+            calculateNominalStock(); 
+        }
+        window.updateStockItemDropdown = updateStockItemDropdown;
 
-        window.populateFineDropdown = function() {
+        function populateFineDropdown() {
             const select = document.getElementById('fine-name');
             if(!select) return;
             let html = '<option value="" disabled selected>-- Pilih Anggota --</option>';
@@ -1325,23 +1329,27 @@
             select.innerHTML = html;
             const fd = document.getElementById('fine-date');
             if(fd) fd.valueAsDate = new Date();
-        };
+        }
+        window.populateFineDropdown = populateFineDropdown;
 
-        window.calculateNominalStock = function() {
-            const type = document.getElementById('stock-type').value;
+        function calculateNominalStock() {
+            const typeEl = document.getElementById('stock-type');
+            if (!typeEl) return;
+            const type = typeEl.value;
             const container = document.getElementById('nominal-display-container');
             const label = document.getElementById('nominal-display-label');
             const inputField = document.getElementById('hidden-calculated-nominal');
+            if (!container || !label || !inputField) return;
 
             if (type === 'keluar' || type === 'hilang') {
-                const item = document.getElementById('stock-item').value;
-                const qty = parseInt(document.getElementById('stock-qty').value) || 0;
+                const item = document.getElementById('stock-item')?.value;
+                const qty = parseInt(document.getElementById('stock-qty')?.value) || 0;
                 const price = sgeItemPrices[item]?.sell || 0;
                 const total = qty * price;
 
                 container.classList.remove('hidden');
                 inputField.value = total;
-                window.formatRupiahInput(inputField);
+                formatRupiahInput(inputField);
 
                 if (type === 'keluar') {
                     label.innerText = 'Omset Laku (Bisa Diedit)';
@@ -1356,7 +1364,8 @@
                 container.classList.add('hidden');
                 inputField.value = '';
             }
-        };
+        }
+        window.calculateNominalStock = calculateNominalStock;
 
         setTimeout(() => { safeCreateIcons(); updateStockItemDropdown(); populateFineDropdown(); }, 500);
 
@@ -1376,7 +1385,7 @@
             }
         }
 
-        window.fetchDatabase = async function() {
+        async function fetchDatabase() {
             try {
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '⏳ Loading...';
@@ -1459,7 +1468,8 @@
                 const btnRefresh = document.getElementById('btn-refresh');
                 if(btnRefresh) btnRefresh.innerHTML = '🔄 Segarkan Data';
             }
-        };
+        }
+        window.fetchDatabase = fetchDatabase;
 
         function startSync() {
             fetchDatabase(); 
@@ -1473,7 +1483,7 @@
         // =========================================================================
         // LOGIN / LOGOUT
         // =========================================================================
-        window.handleLogin = async function(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login-username').value.trim();
             const passInput = document.getElementById('login-password').value;
@@ -1491,6 +1501,7 @@
             }
             errorElement.classList.remove('hidden');
         }
+        window.handleLogin = handleLogin;
 
         function login(role) {
             currentUser = role;
@@ -1572,7 +1583,7 @@
                 document.getElementById('proker-selector-container')?.classList.remove('hidden');
                 document.getElementById('filter-proker-riwayat')?.classList.remove('hidden');
                 document.getElementById('btn-export')?.classList.remove('hidden');
-                window.switchTab('dashboard');
+                switchTab('dashboard');
             } else if (role === 'AF') {
                 ['dashboard', 'riwayat', 'laporan', 'rekapsge'].forEach(showTab);
                 hideTab('input'); hideTab('kasce'); hideTab('stoksge');
@@ -1581,14 +1592,14 @@
                 document.getElementById('filter-proker-riwayat')?.classList.remove('hidden');
                 document.getElementById('filter-proker-riwayat').value = 'SEMUA';
                 document.getElementById('btn-export')?.classList.add('hidden');
-                window.switchTab('laporan');
+                switchTab('laporan');
             } else if (role === 'GUEST') {
                 showTab('kasce');
                 document.getElementById('dashboard-charts-container')?.classList.add('hidden');
                 document.getElementById('proker-selector-container')?.classList.add('hidden');
                 document.getElementById('filter-proker-riwayat')?.classList.add('hidden');
                 document.getElementById('btn-export')?.classList.add('hidden');
-                window.switchTab('kasce');
+                switchTab('kasce');
             } else if (role === 'SGE MARKET HUB') {
                 ['input', 'riwayat', 'stoksge', 'rekapsge'].forEach(showTab);
                 hideTab('dashboard'); hideTab('laporan'); hideTab('kasce');
@@ -1598,7 +1609,7 @@
                 document.getElementById('filter-proker-riwayat').value = 'SEMUA';
                 document.getElementById('input-proker').value = role;
                 document.getElementById('btn-export')?.classList.add('hidden');
-                window.switchTab('input');
+                switchTab('input');
             } else {
                 ['input', 'riwayat'].forEach(showTab);
                 hideTab('dashboard'); hideTab('laporan'); hideTab('kasce'); hideTab('stoksge'); hideTab('rekapsge');
@@ -1608,15 +1619,16 @@
                 document.getElementById('filter-proker-riwayat').value = 'SEMUA';
                 document.getElementById('input-proker').value = role;
                 document.getElementById('btn-export')?.classList.add('hidden');
-                window.switchTab('input');
+                switchTab('input');
             }
 
-            window.toggleSGEDropdown();
+            toggleSGEDropdown();
             startSync(); 
             setTimeout(() => safeCreateIcons(), 50);
         }
+        window.login = login;
 
-        window.logout = function() {
+        function logout() {
             currentUser = null;
             try {
                 localStorage.removeItem('ce_logged_role');
@@ -1635,6 +1647,7 @@
             }
             safeCreateIcons();
         }
+        window.logout = logout;
 
         function updateUI() {
             if(!currentUser) return;
@@ -1728,7 +1741,7 @@
             }
         });
 
-        window.toggleFineStatus = async function(dbId, currentIsPaid) {
+        async function toggleFineStatus(dbId, currentIsPaid) {
             if (currentUser === 'GUEST') return showToast('Mode tamu hanya dapat melihat data denda.', 'warning');
             try {
                 await fetchWithTimeout(`${RTDB_URL}/ce_fines/${dbId}.json`, {
@@ -1741,8 +1754,9 @@
                 showToast('Gagal mengubah status denda.', 'error');
             }
         }
+        window.toggleFineStatus = toggleFineStatus;
 
-        window.deleteFine = async function(dbId) {
+        async function deleteFine(dbId) {
             if (currentUser === 'GUEST') return showToast('Mode tamu tidak dapat menghapus denda.', 'warning');
             const ok = await showConfirm('Hapus data denda ini secara permanen?', 'Hapus Denda');
             if(ok) {
@@ -1755,8 +1769,9 @@
                 }
             }
         }
+        window.deleteFine = deleteFine;
 
-        window.renderFines = function() {
+        function renderFines() {
             let fineHTML = '';
             let totalUnpaid = 0;
             let totalPaid = 0;
@@ -1814,6 +1829,7 @@
             
             safeCreateIcons();
         }
+        window.renderFines = renderFines;
 
         // =========================================================================
         // PENGELUARAN KAS INTERNAL
@@ -1856,7 +1872,7 @@
             }
         });
 
-        window.renderKasOut = function() {
+        function renderKasOut() {
             const kasOutTx = transactions.filter(t => t.proker === 'KAS INTERNAL' && t.type === 'pengeluaran').sort((a,b) => b.createdAt - a.createdAt);
             let totalKasOut = 0;
             let html = '';
@@ -1892,11 +1908,12 @@
             if(headDisplay) headDisplay.innerText = formatRp(totalKasOut);
             return totalKasOut;
         }
+        window.renderKasOut = renderKasOut;
 
         // =========================================================================
         // MANAJEMEN STOK SGE
         // =========================================================================
-        window.setStockType = function(type) {
+        function setStockType(type) {
             document.getElementById('stock-type').value = type;
             const btnIn = document.getElementById('btn-stok-masuk');
             const btnOut = document.getElementById('btn-stok-keluar');
@@ -1913,8 +1930,9 @@
             else if (type === 'keluar') btnOut.className = `${base} border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400`;
             else if (type === 'hilang') btnLoss.className = `${base} border-rose-500 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-center leading-tight`;
             
-            window.calculateNominalStock();
+            calculateNominalStock();
         }
+        window.setStockType = setStockType;
 
         document.getElementById('stock-ledger-form')?.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -1951,7 +1969,7 @@
                 
                 document.getElementById('stock-qty').value = '';
                 document.getElementById('stock-desc').value = '';
-                window.setStockType('masuk'); 
+                setStockType('masuk'); 
                 await fetchDatabase();
                 showToast('Mutasi stok berhasil diperbarui!', 'success');
             } catch(error) {
@@ -1963,7 +1981,7 @@
             }
         });
 
-        window.deleteStockLedger = async function(dbId) {
+        async function deleteStockLedger(dbId) {
             const ok = await showConfirm('Yakin ingin menghapus riwayat mutasi stok ini? Sisa stok akan terkalkulasi ulang.', 'Hapus Mutasi Stok');
             if(ok) {
                 try {
@@ -1973,6 +1991,7 @@
                 } catch(e) { showToast('Gagal menghapus data.', 'error'); }
             }
         }
+        window.deleteStockLedger = deleteStockLedger;
 
         function renderSgeStockTab() {
             calculatedStock = {};
@@ -2061,11 +2080,12 @@
             }
             document.getElementById('stock-current-container').innerHTML = currentStockHTML;
         }
+        window.renderSgeStockTab = renderSgeStockTab;
 
         // =========================================================================
         // REKAP SGE
         // =========================================================================
-        window.renderRekapSge = function() {
+        function renderRekapSge() {
             const monthVal = document.getElementById('rekapsge-month').value; 
             if(!monthVal) return;
 
@@ -2145,12 +2165,13 @@
             }
             document.getElementById('rekapsge-table-body').innerHTML = tbodyHTML;
             safeCreateIcons();
-        };
+        }
+        window.renderRekapSge = renderRekapSge;
 
         // =========================================================================
         // DASHBOARD, LAPORAN, KAS CE, RIWAYAT
         // =========================================================================
-        window.updatePdhBem = async function(val) {
+        async function updatePdhBem(val) {
             let sold = parseInt(val) || 0;
             if (sold < 0) sold = 0;
             if (sold > 146) sold = 146; 
@@ -2161,6 +2182,7 @@
                 renderLaporanAF(); 
             } catch(e) { showToast("Gagal menyimpan data PDH BEM.", "error"); }
         }
+        window.updatePdhBem = updatePdhBem;
 
         function renderKasTable() {
             let totalKasTerkumpul = 0;
@@ -2202,20 +2224,20 @@
             document.getElementById('kas-thead').innerHTML = thead;
             document.getElementById('kas-tbody').innerHTML = tbody;
 
-            if (typeof window.renderFines === 'function') window.renderFines();
+            renderFines();
 
             let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
             const kasMasukUi = document.getElementById('kasce-total-in');
             if (kasMasukUi) kasMasukUi.innerText = formatRp(totalKasTerkumpul + totalDendaTerbayar);
             
-            let totalKasOut = 0;
-            if(typeof window.renderKasOut === 'function') totalKasOut = window.renderKasOut();
+            let totalKasOut = renderKasOut();
             
             let sisaKas = (totalKasTerkumpul + totalDendaTerbayar) - totalKasOut;
             document.getElementById('total-kas-terkumpul').innerText = formatRp(sisaKas);
         }
+        window.renderKasTable = renderKasTable;
 
-        window.updateKas = async function(selectElement, name, month) {
+        async function updateKas(selectElement, name, month) {
             if (currentUser === 'GUEST') return showToast('Mode tamu hanya dapat melihat data kas.', 'warning');
             const val = parseInt(selectElement.value);
             const colorMap = {
@@ -2239,8 +2261,7 @@
                 let total = 0;
                 for (const n in kasData) { for (const m in kasData[n]) { total += parseInt(kasData[n][m]); } }
                 let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
-                let totalKasOut = 0;
-                if(typeof window.renderKasOut === 'function') totalKasOut = window.renderKasOut();
+                let totalKasOut = renderKasOut();
                 const sisaKas = (total + totalDendaTerbayar) - totalKasOut;
                 const kasMasukUi = document.getElementById('kasce-total-in');
                 if (kasMasukUi) kasMasukUi.innerText = formatRp(total + totalDendaTerbayar);
@@ -2251,6 +2272,7 @@
                 selectElement.classList.remove('animate-pulse');
             }
         }
+        window.updateKas = updateKas;
 
         let barChartObj = null;
         let pieChartObj = null;
@@ -2344,7 +2366,7 @@
             } catch (error) {}
         }
 
-        window.renderLaporanAF = function() {
+        function renderLaporanAF() {
             const monthVal = document.getElementById('report-month').value; 
             if(!monthVal) return;
 
@@ -2488,6 +2510,7 @@
                 <td class="p-4 text-right text-rose-600 dark:text-rose-400 text-base">${formatRp(totalOut)}</td></tr>`;
             safeCreateIcons(); 
         }
+        window.renderLaporanAF = renderLaporanAF;
 
         function renderRiwayat() {
             let tbodyHTML = '';
@@ -2515,15 +2538,21 @@
             const sumOut = filteredTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
             const sumBal = sumIn - sumOut;
 
-            document.getElementById('riwayat-sum-in').innerText = formatRp(sumIn);
-            document.getElementById('riwayat-sum-out').innerText = formatRp(sumOut);
-            document.getElementById('riwayat-sum-balance').innerText = formatRp(sumBal);
+            const sumInEl = document.getElementById('riwayat-sum-in');
+            if (sumInEl) sumInEl.innerText = formatRp(sumIn);
+            const sumOutEl = document.getElementById('riwayat-sum-out');
+            if (sumOutEl) sumOutEl.innerText = formatRp(sumOut);
+            const sumBalEl = document.getElementById('riwayat-sum-balance');
+            if (sumBalEl) sumBalEl.innerText = formatRp(sumBal);
             
             const summaryContainer = document.getElementById('riwayat-summary');
             if (summaryContainer) summaryContainer.classList.remove('hidden');
 
+            const historyBody = document.getElementById('history-table-body');
+            if (!historyBody) return;
+
             if (filteredTx.length === 0) {
-                document.getElementById('history-table-body').innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 dark:text-slate-500">
+                historyBody.innerHTML = `<tr><td colspan="5" class="p-12 text-center text-slate-400 dark:text-slate-500">
                     <div class="flex flex-col items-center gap-3">
                         <span class="text-4xl">📭</span>
                         <span class="font-medium">${searchVal ? 'Tidak ditemukan transaksi yang cocok.' : 'Belum ada data transaksi yang dicatat.'}</span>
@@ -2568,44 +2597,50 @@
                     </tr>`;
             });
             
-            document.getElementById('history-table-body').innerHTML = tbodyHTML;
+            historyBody.innerHTML = tbodyHTML;
         }
+        window.renderRiwayat = renderRiwayat;
 
-        window.toggleSGEDropdown = function() {
-            const proker = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
+        function toggleSGEDropdown() {
+            const proker = currentUser === 'GLOBAL' ? document.getElementById('input-proker')?.value : currentUser;
             const container = document.getElementById('sge-category-container');
             const categorySelect = document.getElementById('input-category');
             const categoryLabel = document.getElementById('label-category');
 
+            if (!container || !categorySelect) return;
+
             if(proker === 'SGE MARKET HUB') {
                 container.classList.remove('hidden'); container.classList.add('block');
-                categoryLabel.innerText = '📦 Kategori SGE';
+                if (categoryLabel) categoryLabel.innerText = '📦 Kategori SGE';
                 categorySelect.innerHTML = `<option value="ICE CREAM">ICE CREAM</option><option value="MINUMAN">MINUMAN</option><option value="POP MIE">POP MIE</option><option value="PDH KKN">PDH KKN</option><option value="RESTOCK / MODAL">RESTOCK / MODAL</option><option value="LAINNYA">LAINNYA</option>`;
             } else if (proker === 'FILKOMMERCH') {
                 container.classList.remove('hidden'); container.classList.add('block');
-                categoryLabel.innerText = '🛍️ Kategori Merch';
+                if (categoryLabel) categoryLabel.innerText = '🛍️ Kategori Merch';
                 categorySelect.innerHTML = `<option value="PENJUALAN BARANG">PENJUALAN BARANG</option><option value="RESTOCK / MODAL">RESTOCK / MODAL</option><option value="LAINNYA">LAINNYA</option>`;
             } else {
                 container.classList.add('hidden'); container.classList.remove('block');
                 categorySelect.innerHTML = '<option value="UMUM">UMUM</option>';
             }
         }
+        window.toggleSGEDropdown = toggleSGEDropdown;
 
-        window.setTxType = function(type) {
-            document.getElementById('input-type').value = type;
+        function setTxType(type) {
+            const inputType = document.getElementById('input-type');
+            if (inputType) inputType.value = type;
             const btnIn = document.getElementById('btn-pemasukan');
             const btnOut = document.getElementById('btn-pengeluaran');
 
             if (type === 'pemasukan') {
-                btnIn.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm flex items-center justify-center gap-2";
-                btnOut.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-400 hover:border-rose-200 hover:text-rose-500 flex items-center justify-center gap-2";
+                if (btnIn) btnIn.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm flex items-center justify-center gap-2";
+                if (btnOut) btnOut.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-400 hover:border-rose-200 hover:text-rose-500 flex items-center justify-center gap-2";
             } else {
-                btnOut.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-rose-500 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 shadow-sm flex items-center justify-center gap-2";
-                btnIn.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-400 hover:border-emerald-200 hover:text-emerald-500 flex items-center justify-center gap-2";
+                if (btnOut) btnOut.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-rose-500 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 shadow-sm flex items-center justify-center gap-2";
+                if (btnIn) btnIn.className = "tx-type-btn p-4 rounded-xl border-2 font-black transition-all border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-400 hover:border-emerald-200 hover:text-emerald-500 flex items-center justify-center gap-2";
             }
         }
+        window.setTxType = setTxType;
 
-        window.editTx = function(dbId) {
+        function editTx(dbId) {
             const tx = transactions.find(t => t.dbId === dbId);
             if(!tx) return;
 
@@ -2613,16 +2648,16 @@
             document.getElementById('input-date').value = tx.date;
             if(currentUser === 'GLOBAL') document.getElementById('input-proker').value = tx.proker;
             
-            window.toggleSGEDropdown();
+            toggleSGEDropdown();
             if (tx.proker === 'SGE MARKET HUB' || tx.proker === 'FILKOMMERCH') {
                 document.getElementById('input-category').value = tx.category;
             }
             
-            window.setTxType(tx.type);
+            setTxType(tx.type);
             
             const inputNominal = document.getElementById('input-nominal');
             inputNominal.value = tx.nominal; 
-            window.formatRupiahInput(inputNominal); 
+            formatRupiahInput(inputNominal); 
             
             document.getElementById('input-desc').value = tx.desc;
 
@@ -2631,10 +2666,11 @@
             btnSubmit.className = "w-full py-4 mt-4 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2";
             
             safeCreateIcons();
-            window.switchTab('input');
+            switchTab('input');
         }
+        window.editTx = editTx;
 
-        window.deleteTx = async function(dbId) {
+        async function deleteTx(dbId) {
             const ok = await showConfirm('Yakin ingin menghapus transaksi KEUANGAN ini permanen?', 'Hapus Transaksi');
             if(ok) {
                 try {
@@ -2647,8 +2683,9 @@
                 }
             }
         }
+        window.deleteTx = deleteTx;
 
-        document.getElementById('transaction-form').addEventListener('submit', async function(e) {
+        document.getElementById('transaction-form')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const prokerVal = currentUser === 'GLOBAL' ? document.getElementById('input-proker').value : currentUser;
@@ -2700,7 +2737,7 @@
                 editingDbId = null;
                 
                 await fetchDatabase(); 
-                window.switchTab('riwayat');
+                switchTab('riwayat');
 
             } catch (error) {
                 showToast('Koneksi gagal atau ditolak server! Pastikan koneksi internet stabil.', 'error');
@@ -2711,7 +2748,7 @@
             }
         });
 
-        window.switchTab = function(tabId) {
+        function switchTab(tabId) {
             if (currentUser === 'GUEST') {
                 tabId = 'kasce';
             } else if (currentUser === 'AF' && !['dashboard', 'riwayat', 'laporan', 'rekapsge'].includes(tabId)) {
@@ -2727,10 +2764,14 @@
             if (tabId !== 'input' && editingDbId) {
                 editingDbId = null;
                 const submitBtn = document.getElementById('btn-submit');
-                submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
-                submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
-                document.getElementById('input-nominal').value = '';
-                document.getElementById('input-desc').value = '';
+                if (submitBtn) {
+                    submitBtn.innerHTML = '☁️ SIMPAN TRANSAKSI DANA';
+                    submitBtn.className = "w-full py-4 mt-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-lg rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-teal-500";
+                }
+                const inNom = document.getElementById('input-nominal');
+                if (inNom) inNom.value = '';
+                const inDesc = document.getElementById('input-desc');
+                if (inDesc) inDesc.value = '';
                 safeCreateIcons();
             }
 
@@ -2766,14 +2807,15 @@
             if(tabId === 'laporan') renderLaporanAF();
             if(tabId === 'kasce') renderKasTable();
             if(tabId === 'stoksge') renderSgeStockTab();
-            if(tabId === 'rekapsge') window.renderRekapSge(); 
+            if(tabId === 'rekapsge') renderRekapSge(); 
             if(tabId === 'riwayat') renderRiwayat(); 
         }
+        window.switchTab = switchTab;
 
         // =========================================================================
         // AUTO-RESTORE SESSION ON PAGE REFRESH (ANTI-LOGOUT)
         // =========================================================================
-        (function restoreSession() {
+        function restoreSession() {
             try {
                 const savedRole = localStorage.getItem('ce_logged_role');
                 const validRoles = ['GLOBAL', 'AF', 'STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB', 'GUEST'];
@@ -2782,14 +2824,20 @@
                     const savedTab = localStorage.getItem('ce_active_tab');
                     if (savedTab) {
                         setTimeout(() => {
-                            window.switchTab(savedTab);
+                            switchTab(savedTab);
                         }, 50);
                     }
                 }
             } catch(e) {
                 console.error("Gagal memulihkan sesi login:", e);
             }
-        })();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreSession);
+        } else {
+            restoreSession();
+        }
 
     </script>
 </body>
