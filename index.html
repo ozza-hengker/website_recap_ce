@@ -14,7 +14,7 @@
 
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=session_persist_v6';
+        const currentVersion = 'v=saldo_role_v7';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -1673,26 +1673,52 @@
         }
 
         function updateHeaderNetto() {
-            if (currentUser === 'AF') {
-                document.getElementById('header-netto-container').classList.add('hidden');
+            const container = document.getElementById('header-netto-container');
+            const label = document.getElementById('header-netto-label');
+            const display = document.getElementById('global-netto');
+
+            // GUEST: sembunyikan total saldo
+            if (currentUser === 'GUEST') {
+                container.classList.add('hidden');
                 return;
-            } else {
-                document.getElementById('header-netto-container').classList.remove('hidden');
             }
 
-            const inTotal = transactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
-            const outTotal = transactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
-            
-            let totalKasBulanan = 0;
-            for (const n in kasData) {
-                for (const m in kasData[n]) {
-                    totalKasBulanan += parseInt(kasData[n][m] || 0);
+            container.classList.remove('hidden');
+
+            // GLOBAL & AF: Tampilkan Total Saldo CE lengkap
+            if (currentUser === 'GLOBAL' || currentUser === 'AF') {
+                const inTotal = transactions.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+                const outTotal = transactions.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+                
+                let totalKasBulanan = 0;
+                for (const n in kasData) {
+                    for (const m in kasData[n]) {
+                        totalKasBulanan += parseInt(kasData[n][m] || 0);
+                    }
                 }
-            }
-            const totalDendaLunas = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
+                const totalDendaLunas = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
 
-            const totalSaldoCE = (inTotal - outTotal) + totalKasBulanan + totalDendaLunas;
-            document.getElementById('global-netto').innerText = formatRp(totalSaldoCE);
+                const totalSaldoCE = (inTotal - outTotal) + totalKasBulanan + totalDendaLunas;
+                label.innerText = 'Total Saldo CE';
+                display.innerText = formatRp(totalSaldoCE);
+            } else {
+                // FILKOMMERCH, SGE MARKET HUB, STRATEGIC PARTNERSHIP:
+                // Hanya tampilkan saldo dari proker mereka sendiri
+                const myProker = currentUser; // currentUser = nama proker
+                const myTx = transactions.filter(t => t.proker === myProker);
+                const myIn = myTx.filter(t => t.type === 'pemasukan').reduce((sum, t) => sum + t.nominal, 0);
+                const myOut = myTx.filter(t => t.type === 'pengeluaran').reduce((sum, t) => sum + t.nominal, 0);
+                const mySaldo = myIn - myOut;
+
+                // Label sesuai proker
+                const labelMap = {
+                    'FILKOMMERCH': 'Saldo Merch',
+                    'SGE MARKET HUB': 'Saldo SGE',
+                    'STRATEGIC PARTNERSHIP': 'Saldo Strategic'
+                };
+                label.innerText = labelMap[myProker] || ('Saldo ' + myProker);
+                display.innerText = formatRp(mySaldo);
+            }
         }
 
         // =========================================================================
