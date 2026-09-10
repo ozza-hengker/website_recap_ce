@@ -14,7 +14,7 @@
 
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=saldo_role_v7';
+        const currentVersion = 'v=ux_v8';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -89,6 +89,60 @@
         .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 25px -5px rgba(0,0,0,0.1); }
 
+        /* Animated Login Background */
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 100% 50%; }
+            50% { background-position: 100% 0%; }
+            75% { background-position: 0% 100%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animated-gradient {
+            background: linear-gradient(-45deg, #0f766e, #0e7490, #134e4a, #155e75, #064e3b, #0c4a6e);
+            background-size: 400% 400%;
+            animation: gradientShift 12s ease infinite;
+        }
+        .animated-gradient::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, rgba(20, 184, 166, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.12) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+            animation: gradientShift 8s ease infinite reverse;
+        }
+
+        /* Floating particles */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.6; }
+        }
+        .floating-particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            animation: float linear infinite;
+        }
+
+        /* Progress bar */
+        .kas-progress-bar {
+            height: 6px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+            position: relative;
+        }
+        .dark .kas-progress-bar { background: #334155; }
+        .kas-progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, #f59e0b, #10b981);
+        }
+        .kas-progress-fill.full {
+            background: linear-gradient(90deg, #10b981, #06b6d4);
+        }
+
         /* Pulse dot */
         .pulse-dot { width: 8px; height: 8px; border-radius: 50%; animation: pulseDot 2s infinite; }
         @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -131,7 +185,14 @@
     </div>
 
     <!-- ================= LOGIN SCREEN ================= -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-900 via-teal-700 to-cyan-700 p-4">
+    <div id="login-screen" class="min-h-screen flex items-center justify-center animated-gradient p-4 relative overflow-hidden">
+        <!-- Floating Particles -->
+        <div class="floating-particle" style="width:80px;height:80px;top:10%;left:15%;animation-duration:7s;"></div>
+        <div class="floating-particle" style="width:50px;height:50px;top:60%;left:75%;animation-duration:9s;animation-delay:1s;"></div>
+        <div class="floating-particle" style="width:120px;height:120px;top:30%;left:50%;animation-duration:11s;animation-delay:2s;"></div>
+        <div class="floating-particle" style="width:40px;height:40px;top:80%;left:25%;animation-duration:6s;animation-delay:0.5s;"></div>
+        <div class="floating-particle" style="width:60px;height:60px;top:15%;left:85%;animation-duration:8s;animation-delay:3s;"></div>
+        <div class="floating-particle" style="width:90px;height:90px;top:70%;left:45%;animation-duration:10s;animation-delay:1.5s;"></div>
         <div class="glass p-10 rounded-3xl shadow-2xl w-full max-w-md text-center border border-white/50 dark:border-slate-600/50 relative overflow-hidden">
             <div class="absolute -top-16 -right-16 w-32 h-32 bg-cyan-300 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
             <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-teal-300 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
@@ -161,7 +222,10 @@
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <i data-lucide="lock" class="w-5 h-5 text-slate-400"></i>
                         </div>
-                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-700 outline-none transition-all text-slate-800 dark:text-white">
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-11 pr-11 py-3 bg-white/50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white dark:focus:bg-slate-700 outline-none transition-all text-slate-800 dark:text-white">
+                        <button type="button" onclick="togglePassword()" id="btn-toggle-pw" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors" tabindex="-1">
+                            <i data-lucide="eye" id="pw-icon" class="w-5 h-5"></i>
+                        </button>
                     </div>
                 </div>
                 
@@ -1292,6 +1356,39 @@
             return parseInt(val.replace(/[^0-9]/g, '')) || 0;
         }
 
+        function animateCounter(elementOrId, targetValue, duration = 800, isCurrency = true) {
+            const el = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+            if (!el) return;
+            
+            const startValue = parseInt(el.getAttribute('data-value')) || 0;
+            el.setAttribute('data-value', targetValue);
+            
+            const diff = targetValue - startValue;
+            if (diff === 0) {
+                el.innerText = isCurrency ? formatRp(targetValue) : targetValue.toLocaleString('id-ID');
+                return;
+            }
+
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 4);
+                const current = Math.round(startValue + diff * ease);
+                
+                el.innerText = isCurrency ? formatRp(current) : current.toLocaleString('id-ID');
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.innerText = isCurrency ? formatRp(targetValue) : targetValue.toLocaleString('id-ID');
+                }
+            }
+            requestAnimationFrame(update);
+        }
+        window.animateCounter = animateCounter;
+
         const today = new Date();
         const currentMonthString = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
         if (document.getElementById('report-month')) document.getElementById('report-month').value = currentMonthString;
@@ -1483,6 +1580,21 @@
         // =========================================================================
         // LOGIN / LOGOUT
         // =========================================================================
+        function togglePassword() {
+            const input = document.getElementById('login-password');
+            const btn = document.getElementById('btn-toggle-pw');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (btn) btn.innerHTML = '<i data-lucide="eye-off" class="w-5 h-5"></i>';
+            } else {
+                input.type = 'password';
+                if (btn) btn.innerHTML = '<i data-lucide="eye" class="w-5 h-5"></i>';
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        window.togglePassword = togglePassword;
+
         async function handleLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login-username').value.trim();
@@ -1702,7 +1814,7 @@
 
                 const totalSaldoCE = (inTotal - outTotal) + totalKasBulanan + totalDendaLunas;
                 label.innerText = 'Total Saldo CE';
-                display.innerText = formatRp(totalSaldoCE);
+                animateCounter('global-netto', totalSaldoCE);
             } else {
                 // FILKOMMERCH, SGE MARKET HUB, STRATEGIC PARTNERSHIP:
                 // Hanya tampilkan saldo dari proker mereka sendiri
@@ -1719,7 +1831,7 @@
                     'STRATEGIC PARTNERSHIP': 'Saldo Strategic'
                 };
                 label.innerText = labelMap[myProker] || ('Saldo ' + myProker);
-                display.innerText = formatRp(mySaldo);
+                animateCounter('global-netto', mySaldo);
             }
         }
 
@@ -2214,16 +2326,36 @@
 
         function renderKasTable() {
             let totalKasTerkumpul = 0;
-            let thead = `<tr><th class="p-3 sticky-col-header bg-slate-50 dark:bg-slate-900 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama Anggota</th>`;
+            let thead = `<tr><th class="p-3 sticky-col-header bg-slate-50 dark:bg-slate-900 text-left text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider min-w-[170px]">Anggota & Progres</th>`;
             kasMonths.forEach(m => {
                 thead += `<th class="p-3 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider w-32 min-w-[120px]">${m}</th>`;
             });
             thead += `</tr>`;
 
             let tbody = '';
+            const targetPerPerson = kasMonths.length * 10000;
+
             kasNames.forEach(name => {
+                let memberTotal = 0;
+                kasMonths.forEach(m => {
+                    memberTotal += parseInt(kasData[name]?.[m] || 0);
+                });
+                const percent = Math.min(Math.round((memberTotal / targetPerPerson) * 100), 100);
+
                 tbody += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-50 dark:border-slate-700 transition-colors">`;
-                tbody += `<td class="p-3 font-black text-slate-700 dark:text-slate-200 sticky-col bg-white dark:bg-slate-800 uppercase tracking-wide text-sm">${name}</td>`;
+                tbody += `<td class="p-3 sticky-col bg-white dark:bg-slate-800 min-w-[170px]">
+                    <div class="flex items-center justify-between gap-1 mb-1.5">
+                        <span class="font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide text-xs">${name}</span>
+                        <span id="kas-badge-${name}" class="text-[10px] font-black px-1.5 py-0.5 rounded-full ${percent >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}">${percent}%</span>
+                    </div>
+                    <div class="kas-progress-bar w-full mb-1">
+                        <div id="kas-bar-${name}" class="kas-progress-fill ${percent >= 100 ? 'full' : ''}" style="width: ${percent}%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+                        <span>Lunas:</span>
+                        <span id="kas-sum-${name}" class="font-bold text-slate-600 dark:text-slate-300">${formatRp(memberTotal)}</span>
+                    </div>
+                </td>`;
                 
                 kasMonths.forEach(month => {
                     const val = kasData[name]?.[month] || 0;
@@ -2255,13 +2387,12 @@
             renderFines();
 
             let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
-            const kasMasukUi = document.getElementById('kasce-total-in');
-            if (kasMasukUi) kasMasukUi.innerText = formatRp(totalKasTerkumpul + totalDendaTerbayar);
+            animateCounter('kasce-total-in', totalKasTerkumpul + totalDendaTerbayar);
             
             let totalKasOut = renderKasOut();
             
             let sisaKas = (totalKasTerkumpul + totalDendaTerbayar) - totalKasOut;
-            document.getElementById('total-kas-terkumpul').innerText = formatRp(sisaKas);
+            animateCounter('total-kas-terkumpul', sisaKas);
         }
         window.renderKasTable = renderKasTable;
 
@@ -2286,14 +2417,32 @@
                 if(!response.ok) throw new Error("Gagal");
                 selectElement.classList.remove('animate-pulse');
                 
+                // Update progress for this member
+                let memberTotal = 0;
+                kasMonths.forEach(m => { memberTotal += parseInt(kasData[name]?.[m] || 0); });
+                const targetPerPerson = kasMonths.length * 10000;
+                const percent = Math.min(Math.round((memberTotal / targetPerPerson) * 100), 100);
+                const badgeEl = document.getElementById(`kas-badge-${name}`);
+                const barEl = document.getElementById(`kas-bar-${name}`);
+                const sumEl = document.getElementById(`kas-sum-${name}`);
+                if (badgeEl) {
+                    badgeEl.innerText = `${percent}%`;
+                    badgeEl.className = `text-[10px] font-black px-1.5 py-0.5 rounded-full ${percent >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}`;
+                }
+                if (barEl) {
+                    barEl.style.width = `${percent}%`;
+                    if (percent >= 100) barEl.classList.add('full');
+                    else barEl.classList.remove('full');
+                }
+                if (sumEl) sumEl.innerText = formatRp(memberTotal);
+
                 let total = 0;
                 for (const n in kasData) { for (const m in kasData[n]) { total += parseInt(kasData[n][m]); } }
                 let totalDendaTerbayar = ceFines.filter(f => f.isPaid).reduce((sum, f) => sum + f.nominal, 0);
                 let totalKasOut = renderKasOut();
                 const sisaKas = (total + totalDendaTerbayar) - totalKasOut;
-                const kasMasukUi = document.getElementById('kasce-total-in');
-                if (kasMasukUi) kasMasukUi.innerText = formatRp(total + totalDendaTerbayar);
-                document.getElementById('total-kas-terkumpul').innerText = formatRp(sisaKas);
+                animateCounter('kasce-total-in', total + totalDendaTerbayar);
+                animateCounter('total-kas-terkumpul', sisaKas);
                 updateHeaderNetto(); 
             } catch(e) {
                 showToast('Gagal menyimpan status kas.', 'error');
@@ -2347,8 +2496,8 @@
             });
 
             document.getElementById('proker-cards').innerHTML = cardsHTML;
-            document.getElementById('global-in').innerText = formatRp(totalIn);
-            document.getElementById('global-out').innerText = formatRp(totalOut);
+            animateCounter('global-in', totalIn);
+            animateCounter('global-out', totalOut);
 
             if(currentUser !== 'GLOBAL' && currentUser !== 'AF') return;
 
