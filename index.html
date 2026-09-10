@@ -14,7 +14,7 @@
 
     <!-- SCRIPT PENGHANCUR CACHE ABSOLUT -->
     <script>
-        const currentVersion = 'v=favicon_logo_ce_v4';
+        const currentVersion = 'v=session_persist_v5';
         if (!window.location.search.includes(currentVersion)) {
             window.location.replace(window.location.pathname + '?' + currentVersion);
         }
@@ -1494,6 +1494,7 @@
 
         function login(role) {
             currentUser = role;
+            try { localStorage.setItem('ce_logged_role', role); } catch(e) {}
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             
@@ -1617,6 +1618,10 @@
 
         window.logout = function() {
             currentUser = null;
+            try {
+                localStorage.removeItem('ce_logged_role');
+                localStorage.removeItem('ce_active_tab');
+            } catch(e) {}
             stopSync(); 
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
@@ -2730,6 +2735,7 @@
             }
 
             activeTab = tabId;
+            try { localStorage.setItem('ce_active_tab', tabId); } catch(e) {}
 
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             const viewEl = document.getElementById('view-' + tabId);
@@ -2763,6 +2769,27 @@
             if(tabId === 'rekapsge') window.renderRekapSge(); 
             if(tabId === 'riwayat') renderRiwayat(); 
         }
+
+        // =========================================================================
+        // AUTO-RESTORE SESSION ON PAGE REFRESH (ANTI-LOGOUT)
+        // =========================================================================
+        (function restoreSession() {
+            try {
+                const savedRole = localStorage.getItem('ce_logged_role');
+                const validRoles = ['GLOBAL', 'AF', 'STRATEGIC PARTNERSHIP', 'FILKOMMERCH', 'SGE MARKET HUB', 'GUEST'];
+                if (savedRole && validRoles.includes(savedRole)) {
+                    login(savedRole);
+                    const savedTab = localStorage.getItem('ce_active_tab');
+                    if (savedTab) {
+                        setTimeout(() => {
+                            window.switchTab(savedTab);
+                        }, 50);
+                    }
+                }
+            } catch(e) {
+                console.error("Gagal memulihkan sesi login:", e);
+            }
+        })();
 
     </script>
 </body>
